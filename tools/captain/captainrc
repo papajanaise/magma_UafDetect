@@ -71,21 +71,21 @@ POLL=5
 ###
 
 # FUZZERS: an array of fuzzer names (from magma/fuzzers/*) to evaluate
-FUZZERS=(afl aflfast moptafl aflplusplus fairfuzz honggfuzz)
+FUZZERS=(afl_asan)
 
 # [fuzzer_TARGETS]: an array of target names (from magma/targets/*) to fuzz with
 # `fuzzer`. The `fuzzer` prefix is a fuzzer listed in the FUZZERS array
 # (default: all targets)
-# afl_TARGETS=(libpng libtiff libxml2)
+# afl_asan_TARGETS=(openssl)
 
 # [fuzzer_target_PROGRAMS]: an array of program names (from
 # magma/targets/target/configrc) to use as execution drivers when fuzzing the
 # `target`
-# afl_libtiff_PROGRAMS=(tiffcp)
+# afl_asan_openssl_PROGRAMS=(asn1 asn1parse bignum server client x509)
 
 # [fuzzer_target_FUZZARGS]: a string containing fuzzer/target-specific arguments
 # when fuzzing `target` with `fuzzer`
-# afl_libpng_FUZZARGS="-x /magma_shared/png.dict"
+# afl_asan_openssl_FUZZARGS=""
 
 # [fuzzer_CAMPAIGN_WORKERS]: overrides the global CAMPAIGN_WORKERS setting
 # afl_CAMPAIGN_WORKERS=3

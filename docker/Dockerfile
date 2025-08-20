@@ -25,6 +25,8 @@ ENV RANLIB /usr/bin/ranlib
 
 ARG USER_ID=1000
 ARG GROUP_ID=1000
+ENV USER_ID=${USER_ID} GROUP_ID=${GROUP_ID}
+RUN echo "DEBUG UID=${USER_ID} GID=${GROUP_ID}"
 RUN mkdir -p /home && \
 	groupadd -g ${GROUP_ID} magma && \
 	useradd -l -u ${USER_ID} -K UMASK=0000 -d /home -g magma magma && \
