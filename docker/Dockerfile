@@ -31,11 +31,11 @@ RUN mkdir -p /home && \
 	groupadd -g ${GROUP_ID} magma && \
 	useradd -l -u ${USER_ID} -K UMASK=0000 -d /home -g magma magma && \
 	chown magma:magma /home
-RUN	echo "magma:amgam" | chpasswd && usermod -a -G sudo magma
+RUN	echo "magma:magma" | chpasswd && usermod -a -G sudo magma
 
-RUN mkdir -p ${SHARED} ${OUT} && \
-	chown magma:magma ${SHARED} ${OUT} && \
-	chmod 744 ${SHARED} ${OUT}
+RUN mkdir -p "${SHARED}" "${OUT}" && \
+    chown "${USERNAME}:${GROUP_ID}" "${SHARED}" "${OUT}" && \
+    chmod 2775 "${SHARED}" "${OUT}"
 
 ARG magma_path=magma
 ENV MAGMA 	${MAGMA_R}/${magma_path}

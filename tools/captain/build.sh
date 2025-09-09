@@ -45,6 +45,8 @@ set -x
 docker build -t "$IMG_NAME" \
     --build-arg fuzzer_name="$FUZZER" \
     --build-arg target_name="$TARGET" \
+    --build-arg USER_ID=1000 \
+    --build-arg GROUP_ID=1000 \
     $mode_flag $isan_flag $harden_flag \
     -f "$MAGMA/docker/Dockerfile" "$MAGMA"
 set +x
