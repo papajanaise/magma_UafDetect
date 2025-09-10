@@ -20,4 +20,4 @@ ls | grep "afl-llvm-uaf-pass.so"
 PASS_SO="$(pwd)/afl-llvm-uaf-pass.so"
 
 # compile afl_driver.cpp
-"./afl-clang-fast++" $CXXFLAGS -fsanitize=address -Xclang -load -Xclang "$PASS_SO" -Xclang -fpass-plugin="$PASS_SO" -c "afl_driver.cpp" -fPIC -o "$OUT/afl_driver.o"
+"./afl-clang-fast++" $CXXFLAGS -fsanitize=address -Xclang -load -Xclang "$PASS_SO" -Xclang -fpass-plugin="$PASS_SO" -std=c++11 -c "afl_driver.cpp" -fPIC -o "$OUT/afl_driver.o"
