@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 # TODO remove sudo for user "magma" to avoid unwanted priv escalation from
 # other attack vectors.
@@ -31,7 +31,7 @@ RUN mkdir -p /home && \
 	groupadd -g ${GROUP_ID} magma && \
 	useradd -l -u ${USER_ID} -K UMASK=0000 -d /home -g magma magma && \
 	chown magma:magma /home
-RUN	echo "magma:magma" | chpasswd && usermod -a -G sudo magma
+RUN	echo "magma:amgam" | chpasswd && usermod -a -G sudo magma
 
 RUN mkdir -p "${SHARED}" "${OUT}" && \
     chown "${USERNAME}:${GROUP_ID}" "${SHARED}" "${OUT}" && \
