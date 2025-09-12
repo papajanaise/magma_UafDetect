@@ -16,8 +16,9 @@ export CC="$FUZZER/repo/afl-clang-fast"
 export CXX="$FUZZER/repo/afl-clang-fast++"
 export AS="$FUZZER/repo/afl-as"
 
-export CFLAGS="$CFLAGS -fsanitize=address"
-export CXXFLAGS="$CXXFLAGS -fsanitize=address"
+PASS_SO="$FUZZER/repo/afl-llvm-uaf-pass.so"
+export CFLAGS="$CFLAGS -fsanitize=address -Xclang -load -Xclang "$PASS_SO" -Xclang -fpass-plugin="$PASS_SO""
+export CXXFLAGS="$CXXFLAGS -fsanitize=address -Xclang -load -Xclang "$PASS_SO" -Xclang -fpass-plugin="$PASS_SO""
 export LDFLAGS="$LDFLAGS -fsanitize=address"
 
 export LIBS="$LIBS -l:afl_driver.o -lstdc++"
