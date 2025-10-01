@@ -19,6 +19,8 @@ export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
 ulimit -c 0  # Disable core dumps
 export ASAN_OPTIONS="abort_on_error=1:symbolize=0:detect_leaks=0"
 export AFL_USE_UAF_DETECT=1
+export AFL_DEBUG=1
+export AFL_DEBUG_CHILD=1
 
 
 "$FUZZER/repo/afl-fuzz" -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
