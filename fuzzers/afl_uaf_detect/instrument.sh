@@ -16,12 +16,18 @@ export CC="$FUZZER/repo/afl-clang-fast"
 export CXX="$FUZZER/repo/afl-clang-fast++"
 export AS="$FUZZER/repo/afl-as"
 
-PASS_SO="$FUZZER/repo/afl-llvm-uaf-pass.so"
-export CFLAGS="$CFLAGS -fsanitize=address -Xclang -load -Xclang "$PASS_SO" -Xclang -fpass-plugin="$PASS_SO""
-export CXXFLAGS="$CXXFLAGS -fsanitize=address -Xclang -load -Xclang "$PASS_SO" -Xclang -fpass-plugin="$PASS_SO""
+export CFLAGS="$CFLAGS -fsanitize=address"
+export CXXFLAGS="$CXXFLAGS -fsanitize=address"
 export LDFLAGS="$LDFLAGS -fsanitize=address"
 
 export LIBS="$LIBS -l:afl_driver.o -lstdc++"
+
+#build SVF Driver
+cmake -S repo/SVF_drivers -B repo/SVF_drivers/build
+cmake --build . --verbose
+
+#link target files: use target/build.sh script, set compiler to clang-13
+"$TARGET/instrument.sh"
 
 "$MAGMA/build.sh"
 "$TARGET/build.sh"
