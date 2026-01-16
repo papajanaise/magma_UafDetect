@@ -1,0 +1,1714 @@
++ docker build -t magma/afl_uaf_detect/libpng --build-arg fuzzer_name=afl_uaf_detect --build-arg target_name=libpng --build-arg USER_ID=1000 --build-arg GROUP_ID=1000 --build-arg canaries=1 -f /home/papajanaise/magma_UafDetect/docker/Dockerfile /home/papajanaise/magma_UafDetect
+failed to fetch metadata: fork/exec /usr/local/lib/docker/cli-plugins/docker-buildx: no such file or directory
+
+DEPRECATED: The legacy builder is deprecated and will be removed in a future release.
+            Install the buildx component to build images with BuildKit:
+            https://docs.docker.com/go/buildx/
+
+Sending build context to Docker daemon  249.4MB
+Step 1/61 : FROM ubuntu:22.04
+ ---> b1dc6972547a
+Step 2/61 : RUN apt-get update && apt-get install -y sudo
+ ---> Using cache
+ ---> fa355e1e02ea
+Step 3/61 : ARG magma_root=./
+ ---> Using cache
+ ---> 73b502db8947
+Step 4/61 : ENV MAGMA_R /magma
+ ---> Using cache
+ ---> 5b2f7fa67182
+Step 5/61 : ENV OUT		/magma_out
+ ---> Using cache
+ ---> 3f93a51c2063
+Step 6/61 : ENV SHARED 	/magma_shared
+ ---> Using cache
+ ---> 5cae1d03ea3d
+Step 7/61 : ENV CC  /usr/bin/gcc
+ ---> Using cache
+ ---> decad24eb9dd
+Step 8/61 : ENV CXX /usr/bin/g++
+ ---> Using cache
+ ---> 4ce162423ba0
+Step 9/61 : ENV LD /usr/bin/ld
+ ---> Using cache
+ ---> 0c4c312e7540
+Step 10/61 : ENV AR /usr/bin/ar
+ ---> Using cache
+ ---> 678cac670337
+Step 11/61 : ENV AS /usr/bin/as
+ ---> Using cache
+ ---> e9a7b7f52db9
+Step 12/61 : ENV NM /usr/bin/nm
+ ---> Using cache
+ ---> 8c747e714dc3
+Step 13/61 : ENV RANLIB /usr/bin/ranlib
+ ---> Using cache
+ ---> 24044defb561
+Step 14/61 : ARG USER_ID=1000
+ ---> Using cache
+ ---> baf00ec6248e
+Step 15/61 : ARG GROUP_ID=1000
+ ---> Using cache
+ ---> fcc7c6ea59a7
+Step 16/61 : ENV USER_ID=${USER_ID} GROUP_ID=${GROUP_ID}
+ ---> Using cache
+ ---> a58401656802
+Step 17/61 : RUN echo "DEBUG UID=${USER_ID} GID=${GROUP_ID}"
+ ---> Using cache
+ ---> 762852429a22
+Step 18/61 : RUN mkdir -p /home && 	groupadd -g ${GROUP_ID} magma && 	useradd -l -u ${USER_ID} -K UMASK=0000 -d /home -g magma magma && 	chown magma:magma /home
+ ---> Using cache
+ ---> 7ef5a2a51eb0
+Step 19/61 : RUN	echo "magma:amgam" | chpasswd && usermod -a -G sudo magma
+ ---> Using cache
+ ---> 4d5cc8cf9340
+Step 20/61 : RUN mkdir -p "${SHARED}" "${OUT}" &&     chown "${USERNAME}:${GROUP_ID}" "${SHARED}" "${OUT}" &&     chmod 2775 "${SHARED}" "${OUT}"
+ ---> Using cache
+ ---> 53db59cef4db
+Step 21/61 : ARG magma_path=magma
+ ---> Using cache
+ ---> b8666ef1bf60
+Step 22/61 : ENV MAGMA 	${MAGMA_R}/${magma_path}
+ ---> Using cache
+ ---> c17f38637324
+Step 23/61 : USER root:root
+ ---> Using cache
+ ---> 65e7bd7f6154
+Step 24/61 : RUN mkdir -p ${MAGMA} && chown magma:magma ${MAGMA}
+ ---> Using cache
+ ---> b71ff60e6241
+Step 25/61 : COPY --chown=magma:magma ${magma_root}/${magma_path} ${MAGMA}/
+ ---> Using cache
+ ---> 8f961751fd23
+Step 26/61 : RUN ${MAGMA}/preinstall.sh
+ ---> Using cache
+ ---> 000cda284721
+Step 27/61 : USER magma:magma
+ ---> Using cache
+ ---> a7d40bac49b1
+Step 28/61 : RUN ${MAGMA}/prebuild.sh
+ ---> Using cache
+ ---> 0ff1fbf1600c
+Step 29/61 : ARG fuzzer_name
+ ---> Using cache
+ ---> e6295ca9dcbd
+Step 30/61 : ARG fuzzer_path=fuzzers/${fuzzer_name}
+ ---> Using cache
+ ---> e7d40f6da201
+Step 31/61 : ENV FUZZER 	${MAGMA_R}/${fuzzer_path}
+ ---> Using cache
+ ---> f78d41011f91
+Step 32/61 : USER root:root
+ ---> Using cache
+ ---> 997157f0c2ea
+Step 33/61 : RUN mkdir -p ${FUZZER} && chown magma:magma ${FUZZER}
+ ---> Using cache
+ ---> 42ed80cf62be
+Step 34/61 : COPY --chown=magma:magma ${magma_root}/${fuzzer_path} ${FUZZER}/
+ ---> 42aea548dbcd
+Step 35/61 : RUN ${FUZZER}/preinstall.sh
+ ---> Running in 4fd575f1e275
+Hit:1 http://archive.ubuntu.com/ubuntu jammy InRelease
+Get:2 http://security.ubuntu.com/ubuntu jammy-security InRelease [129 kB]
+Get:3 http://archive.ubuntu.com/ubuntu jammy-updates InRelease [128 kB]
+Get:4 http://archive.ubuntu.com/ubuntu jammy-backports InRelease [127 kB]
+Get:5 http://security.ubuntu.com/ubuntu jammy-security/main amd64 Packages [3637 kB]
+Get:6 http://archive.ubuntu.com/ubuntu jammy-updates/multiverse amd64 Packages [69.2 kB]
+Get:7 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 Packages [6411 kB]
+Get:8 http://security.ubuntu.com/ubuntu jammy-security/restricted amd64 Packages [6205 kB]
+Get:9 http://security.ubuntu.com/ubuntu jammy-security/multiverse amd64 Packages [60.9 kB]
+Get:10 http://security.ubuntu.com/ubuntu jammy-security/universe amd64 Packages [1289 kB]
+Get:11 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 Packages [1600 kB]
+Get:12 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 Packages [3968 kB]
+Get:13 http://archive.ubuntu.com/ubuntu jammy-backports/main amd64 Packages [83.9 kB]
+Get:14 http://archive.ubuntu.com/ubuntu jammy-backports/universe amd64 Packages [37.2 kB]
+Fetched 23.7 MB in 2s (10.6 MB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+build-essential is already the newest version (12.9ubuntu3).
+make is already the newest version (4.3-4.1build1).
+The following additional packages will be installed:
+  ca-certificates dbus dirmngr distro-info-data dmsetup gir1.2-glib-2.0
+  gir1.2-packagekitglib-1.0 git-man gnupg-l10n gnupg-utils gpg gpg-agent
+  gpg-wks-client gpg-wks-server gpgconf gpgsm gpgv iso-codes less libapparmor1
+  libappstream4 libargon2-1 libcap2-bin libcbor0.8 libcryptsetup12
+  libcurl3-gnutls libdbus-1-3 libdevmapper1.02.1 libdw1 libedit2 libelf1
+  liberror-perl libfido2-1 libgirepository-1.0-1 libglib2.0-0 libglib2.0-bin
+  libglib2.0-data libgstreamer1.0-0 libicu70 libip4tc2 libjson-c5 libkmod2
+  libmpdec3 libnghttp2-14 libnss-systemd libpackagekit-glib2-18 libpam-cap
+  libpam-systemd libpolkit-agent-1-0 libpolkit-gobject-1-0 libpsl5
+  libpython3-stdlib libpython3.10-minimal libpython3.10-stdlib librtmp1
+  libssh-4 libstemmer0d libsystemd0 libunwind8 libxext6 libxml2 libxmlb2
+  libxmuu1 libyaml-0-2 media-types networkd-dispatcher openssh-client openssl
+  packagekit packagekit-tools pkexec policykit-1 polkitd publicsuffix
+  python-apt-common python3 python3-apt python3-blinker python3-cffi-backend
+  python3-cryptography python3-dbus python3-distro python3-distro-info
+  python3-gi python3-httplib2 python3-importlib-metadata python3-jeepney
+  python3-jwt python3-keyring python3-launchpadlib python3-lazr.restfulclient
+  python3-lazr.uri python3-minimal python3-more-itertools python3-oauthlib
+  python3-pkg-resources python3-pyparsing python3-secretstorage python3-six
+  python3-software-properties python3-wadllib python3-zipp python3.10
+  python3.10-minimal shared-mime-info systemd systemd-sysv systemd-timesyncd
+  unattended-upgrades xauth xdg-user-dirs
+Suggested packages:
+  default-dbus-session-bus | dbus-session-bus dbus-user-session
+  pinentry-gnome3 tor gettext-base git-daemon-run | git-daemon-sysvinit
+  git-doc git-email git-gui gitk gitweb git-cvs git-mediawiki git-svn
+  parcimonie xloadimage scdaemon isoquery gstreamer1.0-tools iw
+  | wireless-tools keychain libpam-ssh monkeysphere ssh-askpass appstream
+  python3-doc python3-tk python3-venv python3-apt-dbg python-apt-doc
+  python-blinker-doc python-cryptography-doc python3-cryptography-vectors
+  python-dbus-doc python3-crypto gir1.2-secret-1 gnome-keyring
+  libkf5wallet-bin python3-keyrings.alt python3-testresources
+  python3-setuptools python-pyparsing-doc python-secretstorage-doc
+  python3.10-venv python3.10-doc binfmt-support systemd-container
+  libtss2-esys-3.0.2-0 libtss2-mu0 libtss2-rc0 bsd-mailx default-mta
+  | mail-transport-agent needrestart powermgmt-base
+The following NEW packages will be installed:
+  ca-certificates dbus distro-info-data dmsetup gir1.2-glib-2.0
+  gir1.2-packagekitglib-1.0 git git-man iso-codes less libapparmor1
+  libappstream4 libargon2-1 libcap2-bin libcbor0.8 libcryptsetup12
+  libcurl3-gnutls libdbus-1-3 libdevmapper1.02.1 libdw1 libedit2 libelf1
+  liberror-perl libfido2-1 libgirepository-1.0-1 libglib2.0-0 libglib2.0-bin
+  libglib2.0-data libgstreamer1.0-0 libicu70 libip4tc2 libjson-c5 libkmod2
+  libmpdec3 libnghttp2-14 libnss-systemd libpackagekit-glib2-18 libpam-cap
+  libpam-systemd libpolkit-agent-1-0 libpolkit-gobject-1-0 libpsl5
+  libpython3-stdlib libpython3.10-minimal libpython3.10-stdlib librtmp1
+  libssh-4 libstemmer0d libunwind8 libxext6 libxml2 libxmlb2 libxmuu1
+  libyaml-0-2 lsb-release media-types networkd-dispatcher openssh-client
+  openssl packagekit packagekit-tools pkexec policykit-1 polkitd publicsuffix
+  python-apt-common python3 python3-apt python3-blinker python3-cffi-backend
+  python3-cryptography python3-dbus python3-distro python3-distro-info
+  python3-gi python3-httplib2 python3-importlib-metadata python3-jeepney
+  python3-jwt python3-keyring python3-launchpadlib python3-lazr.restfulclient
+  python3-lazr.uri python3-minimal python3-more-itertools python3-oauthlib
+  python3-pkg-resources python3-pyparsing python3-secretstorage python3-six
+  python3-software-properties python3-wadllib python3-zipp python3.10
+  python3.10-minimal shared-mime-info software-properties-common systemd
+  systemd-sysv systemd-timesyncd unattended-upgrades wget xauth xdg-user-dirs
+The following packages will be upgraded:
+  dirmngr gnupg gnupg-l10n gnupg-utils gpg gpg-agent gpg-wks-client
+  gpg-wks-server gpgconf gpgsm gpgv libsystemd0
+12 upgraded, 104 newly installed, 0 to remove and 20 not upgraded.
+Need to get 43.4 MB of archives.
+After this operation, 159 MB of additional disk space will be used.
+Get:1 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libsystemd0 amd64 249.11-0ubuntu3.17 [317 kB]
+Get:2 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libpython3.10-minimal amd64 3.10.12-1~22.04.13 [815 kB]
+Get:3 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3.10-minimal amd64 3.10.12-1~22.04.13 [2272 kB]
+Get:4 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-minimal amd64 3.10.6-1~22.04.1 [24.3 kB]
+Get:5 http://archive.ubuntu.com/ubuntu jammy/main amd64 media-types all 7.0.0 [25.5 kB]
+Get:6 http://archive.ubuntu.com/ubuntu jammy/main amd64 libmpdec3 amd64 2.5.1-2build2 [86.8 kB]
+Get:7 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libpython3.10-stdlib amd64 3.10.12-1~22.04.13 [1850 kB]
+Get:8 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3.10 amd64 3.10.12-1~22.04.13 [508 kB]
+Get:9 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libpython3-stdlib amd64 3.10.6-1~22.04.1 [6812 B]
+Get:10 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3 amd64 3.10.6-1~22.04.1 [22.8 kB]
+Get:11 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libapparmor1 amd64 3.0.4-2ubuntu2.5 [39.6 kB]
+Get:12 http://archive.ubuntu.com/ubuntu jammy/main amd64 libargon2-1 amd64 0~20171227-0.3 [19.5 kB]
+Get:13 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libdevmapper1.02.1 amd64 2:1.02.175-2.1ubuntu5 [139 kB]
+Get:14 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libjson-c5 amd64 0.15-3~ubuntu1.22.04.2 [33.5 kB]
+Get:15 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libcryptsetup12 amd64 2:2.4.3-1ubuntu1.3 [211 kB]
+Get:16 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libip4tc2 amd64 1.8.7-1ubuntu5.2 [19.9 kB]
+Get:17 http://archive.ubuntu.com/ubuntu jammy/main amd64 libkmod2 amd64 29-1ubuntu1 [48.0 kB]
+Get:18 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 systemd amd64 249.11-0ubuntu3.17 [4583 kB]
+Get:19 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 systemd-sysv amd64 249.11-0ubuntu3.17 [10.5 kB]
+Get:20 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 gpg-wks-client amd64 2.2.27-3ubuntu2.5 [62.7 kB]
+Get:21 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 dirmngr amd64 2.2.27-3ubuntu2.5 [293 kB]
+Get:22 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 gpg-wks-server amd64 2.2.27-3ubuntu2.5 [57.6 kB]
+Get:23 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 gnupg-utils amd64 2.2.27-3ubuntu2.5 [309 kB]
+Get:24 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 gpg-agent amd64 2.2.27-3ubuntu2.5 [209 kB]
+Get:25 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 gpg amd64 2.2.27-3ubuntu2.5 [519 kB]
+Get:26 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 gpgconf amd64 2.2.27-3ubuntu2.5 [94.3 kB]
+Get:27 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 gnupg-l10n all 2.2.27-3ubuntu2.5 [54.5 kB]
+Get:28 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 gnupg all 2.2.27-3ubuntu2.5 [315 kB]
+Get:29 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 gpgsm amd64 2.2.27-3ubuntu2.5 [197 kB]
+Get:30 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 gpgv amd64 2.2.27-3ubuntu2.5 [137 kB]
+Get:31 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 openssl amd64 3.0.2-0ubuntu1.20 [1185 kB]
+Get:32 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 ca-certificates all 20240203~22.04.1 [162 kB]
+Get:33 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libdbus-1-3 amd64 1.12.20-2ubuntu4.1 [189 kB]
+Get:34 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 dbus amd64 1.12.20-2ubuntu4.1 [158 kB]
+Get:35 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 distro-info-data all 0.52ubuntu0.11 [5444 B]
+Get:36 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 dmsetup amd64 2:1.02.175-2.1ubuntu5 [81.7 kB]
+Get:37 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libglib2.0-0 amd64 2.72.4-0ubuntu2.7 [1467 kB]
+Get:38 http://archive.ubuntu.com/ubuntu jammy/main amd64 libgirepository-1.0-1 amd64 1.72.0-1 [55.6 kB]
+Get:39 http://archive.ubuntu.com/ubuntu jammy/main amd64 gir1.2-glib-2.0 amd64 1.72.0-1 [164 kB]
+Get:40 http://archive.ubuntu.com/ubuntu jammy/main amd64 iso-codes all 4.9.0-1 [3459 kB]
+Get:41 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 less amd64 590-1ubuntu0.22.04.3 [142 kB]
+Get:42 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libcap2-bin amd64 1:2.44-1ubuntu0.22.04.2 [26.0 kB]
+Get:43 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libelf1 amd64 0.186-1ubuntu0.1 [51.1 kB]
+Get:44 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libglib2.0-data all 2.72.4-0ubuntu2.7 [5178 B]
+Get:45 http://archive.ubuntu.com/ubuntu jammy/main amd64 libicu70 amd64 70.1-2 [10.6 MB]
+Get:46 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libnss-systemd amd64 249.11-0ubuntu3.17 [133 kB]
+Get:47 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libpam-cap amd64 1:2.44-1ubuntu0.22.04.2 [7930 B]
+Get:48 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libpam-systemd amd64 249.11-0ubuntu3.17 [203 kB]
+Get:49 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libxml2 amd64 2.9.13+dfsg-1ubuntu0.10 [764 kB]
+Get:50 http://archive.ubuntu.com/ubuntu jammy/main amd64 libyaml-0-2 amd64 0.2.2-1build2 [51.6 kB]
+Get:51 http://archive.ubuntu.com/ubuntu jammy/main amd64 lsb-release all 11.1.0ubuntu4 [10.8 kB]
+Get:52 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-dbus amd64 1.2.18-3build1 [99.5 kB]
+Get:53 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-gi amd64 3.42.1-0ubuntu1 [229 kB]
+Get:54 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 networkd-dispatcher all 2.1-2ubuntu0.22.04.2 [15.8 kB]
+Get:55 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python-apt-common all 2.4.0ubuntu4.1 [14.7 kB]
+Get:56 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-apt amd64 2.4.0ubuntu4.1 [164 kB]
+Get:57 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-pkg-resources all 59.6.0-1.2ubuntu0.22.04.3 [133 kB]
+Get:58 http://archive.ubuntu.com/ubuntu jammy/main amd64 shared-mime-info amd64 2.1-2 [454 kB]
+Get:59 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 systemd-timesyncd amd64 249.11-0ubuntu3.17 [31.2 kB]
+Get:60 http://archive.ubuntu.com/ubuntu jammy/main amd64 xdg-user-dirs amd64 0.17-2ubuntu4 [53.9 kB]
+Get:61 http://archive.ubuntu.com/ubuntu jammy/main amd64 libcbor0.8 amd64 0.8.0-2ubuntu1 [24.6 kB]
+Get:62 http://archive.ubuntu.com/ubuntu jammy/main amd64 libedit2 amd64 3.1-20210910-1build1 [96.8 kB]
+Get:63 http://archive.ubuntu.com/ubuntu jammy/main amd64 libfido2-1 amd64 1.10.0-1 [82.8 kB]
+Get:64 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libnghttp2-14 amd64 1.43.0-1ubuntu0.2 [76.9 kB]
+Get:65 http://archive.ubuntu.com/ubuntu jammy/main amd64 libpsl5 amd64 0.21.0-1.2build2 [58.4 kB]
+Get:66 http://archive.ubuntu.com/ubuntu jammy/main amd64 libxext6 amd64 2:1.3.4-1build1 [31.8 kB]
+Get:67 http://archive.ubuntu.com/ubuntu jammy/main amd64 libxmuu1 amd64 2:1.1.3-3 [10.2 kB]
+Get:68 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 openssh-client amd64 1:8.9p1-3ubuntu0.13 [903 kB]
+Get:69 http://archive.ubuntu.com/ubuntu jammy/main amd64 publicsuffix all 20211207.1025-1 [129 kB]
+Get:70 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-distro-info all 1.1ubuntu0.2 [6554 B]
+Get:71 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 wget amd64 1.21.2-2ubuntu1.1 [339 kB]
+Get:72 http://archive.ubuntu.com/ubuntu jammy/main amd64 xauth amd64 1:1.1-1build2 [27.5 kB]
+Get:73 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libpackagekit-glib2-18 amd64 1.2.5-2ubuntu3 [124 kB]
+Get:74 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 gir1.2-packagekitglib-1.0 amd64 1.2.5-2ubuntu3 [25.3 kB]
+Get:75 http://archive.ubuntu.com/ubuntu jammy/main amd64 librtmp1 amd64 2.4+20151223.gitfa8646d.1-2build4 [58.2 kB]
+Get:76 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libssh-4 amd64 0.9.6-2ubuntu0.22.04.5 [187 kB]
+Get:77 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libcurl3-gnutls amd64 7.81.0-1ubuntu1.21 [284 kB]
+Get:78 http://archive.ubuntu.com/ubuntu jammy/main amd64 liberror-perl all 0.17029-1 [26.5 kB]
+Get:79 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 git-man all 1:2.34.1-1ubuntu1.15 [955 kB]
+Get:80 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 git amd64 1:2.34.1-1ubuntu1.15 [3166 kB]
+Get:81 http://archive.ubuntu.com/ubuntu jammy/main amd64 libstemmer0d amd64 2.2.0-1build1 [165 kB]
+Get:82 http://archive.ubuntu.com/ubuntu jammy/main amd64 libxmlb2 amd64 0.3.6-2build1 [67.8 kB]
+Get:83 http://archive.ubuntu.com/ubuntu jammy/main amd64 libappstream4 amd64 0.15.2-2 [192 kB]
+Get:84 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libdw1 amd64 0.186-1ubuntu0.1 [251 kB]
+Get:85 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libglib2.0-bin amd64 2.72.4-0ubuntu2.7 [80.9 kB]
+Get:86 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libunwind8 amd64 1.3.2-2build2.1 [54.5 kB]
+Get:87 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libgstreamer1.0-0 amd64 1.20.3-0ubuntu1.1 [984 kB]
+Get:88 http://archive.ubuntu.com/ubuntu jammy/main amd64 libpolkit-gobject-1-0 amd64 0.105-33 [43.2 kB]
+Get:89 http://archive.ubuntu.com/ubuntu jammy/main amd64 libpolkit-agent-1-0 amd64 0.105-33 [16.8 kB]
+Get:90 http://archive.ubuntu.com/ubuntu jammy/main amd64 polkitd amd64 0.105-33 [80.0 kB]
+Get:91 http://archive.ubuntu.com/ubuntu jammy/main amd64 pkexec amd64 0.105-33 [15.2 kB]
+Get:92 http://archive.ubuntu.com/ubuntu jammy/main amd64 policykit-1 amd64 0.105-33 [2426 B]
+Get:93 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 packagekit amd64 1.2.5-2ubuntu3 [442 kB]
+Get:94 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 packagekit-tools amd64 1.2.5-2ubuntu3 [28.8 kB]
+Get:95 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-blinker all 1.4+dfsg1-0.4 [14.0 kB]
+Get:96 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-cffi-backend amd64 1.15.0-1build2 [77.4 kB]
+Get:97 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-cryptography amd64 3.4.8-1ubuntu2.2 [236 kB]
+Get:98 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-pyparsing all 2.4.7-1 [61.4 kB]
+Get:99 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-httplib2 all 0.20.2-2 [30.4 kB]
+Get:100 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-more-itertools all 8.10.0-2 [47.9 kB]
+Get:101 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-zipp all 1.0.0-3ubuntu0.1 [6288 B]
+Get:102 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-importlib-metadata all 4.6.4-1 [16.2 kB]
+Get:103 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-jeepney all 0.7.1-3 [36.8 kB]
+Get:104 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-jwt all 2.3.0-1ubuntu0.2 [17.1 kB]
+Get:105 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-secretstorage all 3.3.1-1 [13.2 kB]
+Get:106 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-keyring all 23.5.0-1 [35.7 kB]
+Get:107 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-lazr.uri all 1.0.6-2 [14.4 kB]
+Get:108 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-wadllib all 1.3.6-1 [36.4 kB]
+Get:109 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-distro all 1.7.0-1 [17.0 kB]
+Get:110 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-oauthlib all 3.2.0-1ubuntu0.1 [89.9 kB]
+Get:111 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-six all 1.16.0-3ubuntu1 [12.6 kB]
+Get:112 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-lazr.restfulclient all 0.14.4-1 [51.2 kB]
+Get:113 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-launchpadlib all 1.10.16-1 [125 kB]
+Get:114 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-software-properties all 0.99.22.9 [28.8 kB]
+Get:115 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 software-properties-common all 0.99.22.9 [14.1 kB]
+Get:116 http://archive.ubuntu.com/ubuntu jammy/main amd64 unattended-upgrades all 2.8ubuntu1 [49.4 kB]
+[91mdebconf: delaying package configuration, since apt-utils is not installed
+[0mFetched 43.4 MB in 2s (21.4 MB/s)
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 13575 files and directories currently installed.)
+Preparing to unpack .../libsystemd0_249.11-0ubuntu3.17_amd64.deb ...
+Unpacking libsystemd0:amd64 (249.11-0ubuntu3.17) over (249.11-0ubuntu3.16) ...
+Setting up libsystemd0:amd64 (249.11-0ubuntu3.17) ...
+Selecting previously unselected package libpython3.10-minimal:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 13575 files and directories currently installed.)
+Preparing to unpack .../libpython3.10-minimal_3.10.12-1~22.04.13_amd64.deb ...
+Unpacking libpython3.10-minimal:amd64 (3.10.12-1~22.04.13) ...
+Selecting previously unselected package python3.10-minimal.
+Preparing to unpack .../python3.10-minimal_3.10.12-1~22.04.13_amd64.deb ...
+Unpacking python3.10-minimal (3.10.12-1~22.04.13) ...
+Setting up libpython3.10-minimal:amd64 (3.10.12-1~22.04.13) ...
+Setting up python3.10-minimal (3.10.12-1~22.04.13) ...
+Selecting previously unselected package python3-minimal.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 13871 files and directories currently installed.)
+Preparing to unpack .../0-python3-minimal_3.10.6-1~22.04.1_amd64.deb ...
+Unpacking python3-minimal (3.10.6-1~22.04.1) ...
+Selecting previously unselected package media-types.
+Preparing to unpack .../1-media-types_7.0.0_all.deb ...
+Unpacking media-types (7.0.0) ...
+Selecting previously unselected package libmpdec3:amd64.
+Preparing to unpack .../2-libmpdec3_2.5.1-2build2_amd64.deb ...
+Unpacking libmpdec3:amd64 (2.5.1-2build2) ...
+Selecting previously unselected package libpython3.10-stdlib:amd64.
+Preparing to unpack .../3-libpython3.10-stdlib_3.10.12-1~22.04.13_amd64.deb ...
+Unpacking libpython3.10-stdlib:amd64 (3.10.12-1~22.04.13) ...
+Selecting previously unselected package python3.10.
+Preparing to unpack .../4-python3.10_3.10.12-1~22.04.13_amd64.deb ...
+Unpacking python3.10 (3.10.12-1~22.04.13) ...
+Selecting previously unselected package libpython3-stdlib:amd64.
+Preparing to unpack .../5-libpython3-stdlib_3.10.6-1~22.04.1_amd64.deb ...
+Unpacking libpython3-stdlib:amd64 (3.10.6-1~22.04.1) ...
+Setting up python3-minimal (3.10.6-1~22.04.1) ...
+Selecting previously unselected package python3.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 14273 files and directories currently installed.)
+Preparing to unpack .../0-python3_3.10.6-1~22.04.1_amd64.deb ...
+Unpacking python3 (3.10.6-1~22.04.1) ...
+Selecting previously unselected package libapparmor1:amd64.
+Preparing to unpack .../1-libapparmor1_3.0.4-2ubuntu2.5_amd64.deb ...
+Unpacking libapparmor1:amd64 (3.0.4-2ubuntu2.5) ...
+Selecting previously unselected package libargon2-1:amd64.
+Preparing to unpack .../2-libargon2-1_0~20171227-0.3_amd64.deb ...
+Unpacking libargon2-1:amd64 (0~20171227-0.3) ...
+Selecting previously unselected package libdevmapper1.02.1:amd64.
+Preparing to unpack .../3-libdevmapper1.02.1_2%3a1.02.175-2.1ubuntu5_amd64.deb ...
+Unpacking libdevmapper1.02.1:amd64 (2:1.02.175-2.1ubuntu5) ...
+Selecting previously unselected package libjson-c5:amd64.
+Preparing to unpack .../4-libjson-c5_0.15-3~ubuntu1.22.04.2_amd64.deb ...
+Unpacking libjson-c5:amd64 (0.15-3~ubuntu1.22.04.2) ...
+Selecting previously unselected package libcryptsetup12:amd64.
+Preparing to unpack .../5-libcryptsetup12_2%3a2.4.3-1ubuntu1.3_amd64.deb ...
+Unpacking libcryptsetup12:amd64 (2:2.4.3-1ubuntu1.3) ...
+Selecting previously unselected package libip4tc2:amd64.
+Preparing to unpack .../6-libip4tc2_1.8.7-1ubuntu5.2_amd64.deb ...
+Unpacking libip4tc2:amd64 (1.8.7-1ubuntu5.2) ...
+Selecting previously unselected package libkmod2:amd64.
+Preparing to unpack .../7-libkmod2_29-1ubuntu1_amd64.deb ...
+Unpacking libkmod2:amd64 (29-1ubuntu1) ...
+Selecting previously unselected package systemd.
+Preparing to unpack .../8-systemd_249.11-0ubuntu3.17_amd64.deb ...
+Unpacking systemd (249.11-0ubuntu3.17) ...
+Setting up libapparmor1:amd64 (3.0.4-2ubuntu2.5) ...
+Setting up libargon2-1:amd64 (0~20171227-0.3) ...
+Setting up libdevmapper1.02.1:amd64 (2:1.02.175-2.1ubuntu5) ...
+Setting up libjson-c5:amd64 (0.15-3~ubuntu1.22.04.2) ...
+Setting up libcryptsetup12:amd64 (2:2.4.3-1ubuntu1.3) ...
+Setting up libip4tc2:amd64 (1.8.7-1ubuntu5.2) ...
+Setting up libkmod2:amd64 (29-1ubuntu1) ...
+Setting up systemd (249.11-0ubuntu3.17) ...
+Created symlink /etc/systemd/system/getty.target.wants/getty@tty1.service → /lib/systemd/system/getty@.service.
+Created symlink /etc/systemd/system/multi-user.target.wants/remote-fs.target → /lib/systemd/system/remote-fs.target.
+Created symlink /etc/systemd/system/dbus-org.freedesktop.resolve1.service → /lib/systemd/system/systemd-resolved.service.
+Created symlink /etc/systemd/system/multi-user.target.wants/systemd-resolved.service → /lib/systemd/system/systemd-resolved.service.
+ln: failed to create symbolic link '/etc/resolv.conf': Device or resource busy
+Created symlink /etc/systemd/system/sysinit.target.wants/systemd-pstore.service → /lib/systemd/system/systemd-pstore.service.
+Initializing machine ID from random generator.
+Selecting previously unselected package systemd-sysv.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 15107 files and directories currently installed.)
+Preparing to unpack .../00-systemd-sysv_249.11-0ubuntu3.17_amd64.deb ...
+Unpacking systemd-sysv (249.11-0ubuntu3.17) ...
+Preparing to unpack .../01-gpg-wks-client_2.2.27-3ubuntu2.5_amd64.deb ...
+Unpacking gpg-wks-client (2.2.27-3ubuntu2.5) over (2.2.27-3ubuntu2.4) ...
+Preparing to unpack .../02-dirmngr_2.2.27-3ubuntu2.5_amd64.deb ...
+Unpacking dirmngr (2.2.27-3ubuntu2.5) over (2.2.27-3ubuntu2.4) ...
+Preparing to unpack .../03-gpg-wks-server_2.2.27-3ubuntu2.5_amd64.deb ...
+Unpacking gpg-wks-server (2.2.27-3ubuntu2.5) over (2.2.27-3ubuntu2.4) ...
+Preparing to unpack .../04-gnupg-utils_2.2.27-3ubuntu2.5_amd64.deb ...
+Unpacking gnupg-utils (2.2.27-3ubuntu2.5) over (2.2.27-3ubuntu2.4) ...
+Preparing to unpack .../05-gpg-agent_2.2.27-3ubuntu2.5_amd64.deb ...
+Unpacking gpg-agent (2.2.27-3ubuntu2.5) over (2.2.27-3ubuntu2.4) ...
+Preparing to unpack .../06-gpg_2.2.27-3ubuntu2.5_amd64.deb ...
+Unpacking gpg (2.2.27-3ubuntu2.5) over (2.2.27-3ubuntu2.4) ...
+Preparing to unpack .../07-gpgconf_2.2.27-3ubuntu2.5_amd64.deb ...
+Unpacking gpgconf (2.2.27-3ubuntu2.5) over (2.2.27-3ubuntu2.4) ...
+Preparing to unpack .../08-gnupg-l10n_2.2.27-3ubuntu2.5_all.deb ...
+Unpacking gnupg-l10n (2.2.27-3ubuntu2.5) over (2.2.27-3ubuntu2.4) ...
+Preparing to unpack .../09-gnupg_2.2.27-3ubuntu2.5_all.deb ...
+Unpacking gnupg (2.2.27-3ubuntu2.5) over (2.2.27-3ubuntu2.4) ...
+Preparing to unpack .../10-gpgsm_2.2.27-3ubuntu2.5_amd64.deb ...
+Unpacking gpgsm (2.2.27-3ubuntu2.5) over (2.2.27-3ubuntu2.4) ...
+Preparing to unpack .../11-gpgv_2.2.27-3ubuntu2.5_amd64.deb ...
+Unpacking gpgv (2.2.27-3ubuntu2.5) over (2.2.27-3ubuntu2.4) ...
+Setting up gpgv (2.2.27-3ubuntu2.5) ...
+Selecting previously unselected package openssl.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 15124 files and directories currently installed.)
+Preparing to unpack .../00-openssl_3.0.2-0ubuntu1.20_amd64.deb ...
+Unpacking openssl (3.0.2-0ubuntu1.20) ...
+Selecting previously unselected package ca-certificates.
+Preparing to unpack .../01-ca-certificates_20240203~22.04.1_all.deb ...
+Unpacking ca-certificates (20240203~22.04.1) ...
+Selecting previously unselected package libdbus-1-3:amd64.
+Preparing to unpack .../02-libdbus-1-3_1.12.20-2ubuntu4.1_amd64.deb ...
+Unpacking libdbus-1-3:amd64 (1.12.20-2ubuntu4.1) ...
+Selecting previously unselected package dbus.
+Preparing to unpack .../03-dbus_1.12.20-2ubuntu4.1_amd64.deb ...
+Unpacking dbus (1.12.20-2ubuntu4.1) ...
+Selecting previously unselected package distro-info-data.
+Preparing to unpack .../04-distro-info-data_0.52ubuntu0.11_all.deb ...
+Unpacking distro-info-data (0.52ubuntu0.11) ...
+Selecting previously unselected package dmsetup.
+Preparing to unpack .../05-dmsetup_2%3a1.02.175-2.1ubuntu5_amd64.deb ...
+Unpacking dmsetup (2:1.02.175-2.1ubuntu5) ...
+Selecting previously unselected package libglib2.0-0:amd64.
+Preparing to unpack .../06-libglib2.0-0_2.72.4-0ubuntu2.7_amd64.deb ...
+Unpacking libglib2.0-0:amd64 (2.72.4-0ubuntu2.7) ...
+Selecting previously unselected package libgirepository-1.0-1:amd64.
+Preparing to unpack .../07-libgirepository-1.0-1_1.72.0-1_amd64.deb ...
+Unpacking libgirepository-1.0-1:amd64 (1.72.0-1) ...
+Selecting previously unselected package gir1.2-glib-2.0:amd64.
+Preparing to unpack .../08-gir1.2-glib-2.0_1.72.0-1_amd64.deb ...
+Unpacking gir1.2-glib-2.0:amd64 (1.72.0-1) ...
+Selecting previously unselected package iso-codes.
+Preparing to unpack .../09-iso-codes_4.9.0-1_all.deb ...
+Unpacking iso-codes (4.9.0-1) ...
+Selecting previously unselected package less.
+Preparing to unpack .../10-less_590-1ubuntu0.22.04.3_amd64.deb ...
+Unpacking less (590-1ubuntu0.22.04.3) ...
+Selecting previously unselected package libcap2-bin.
+Preparing to unpack .../11-libcap2-bin_1%3a2.44-1ubuntu0.22.04.2_amd64.deb ...
+Unpacking libcap2-bin (1:2.44-1ubuntu0.22.04.2) ...
+Selecting previously unselected package libelf1:amd64.
+Preparing to unpack .../12-libelf1_0.186-1ubuntu0.1_amd64.deb ...
+Unpacking libelf1:amd64 (0.186-1ubuntu0.1) ...
+Selecting previously unselected package libglib2.0-data.
+Preparing to unpack .../13-libglib2.0-data_2.72.4-0ubuntu2.7_all.deb ...
+Unpacking libglib2.0-data (2.72.4-0ubuntu2.7) ...
+Selecting previously unselected package libicu70:amd64.
+Preparing to unpack .../14-libicu70_70.1-2_amd64.deb ...
+Unpacking libicu70:amd64 (70.1-2) ...
+Selecting previously unselected package libnss-systemd:amd64.
+Preparing to unpack .../15-libnss-systemd_249.11-0ubuntu3.17_amd64.deb ...
+Unpacking libnss-systemd:amd64 (249.11-0ubuntu3.17) ...
+Selecting previously unselected package libpam-cap:amd64.
+Preparing to unpack .../16-libpam-cap_1%3a2.44-1ubuntu0.22.04.2_amd64.deb ...
+Unpacking libpam-cap:amd64 (1:2.44-1ubuntu0.22.04.2) ...
+Selecting previously unselected package libpam-systemd:amd64.
+Preparing to unpack .../17-libpam-systemd_249.11-0ubuntu3.17_amd64.deb ...
+Unpacking libpam-systemd:amd64 (249.11-0ubuntu3.17) ...
+Selecting previously unselected package libxml2:amd64.
+Preparing to unpack .../18-libxml2_2.9.13+dfsg-1ubuntu0.10_amd64.deb ...
+Unpacking libxml2:amd64 (2.9.13+dfsg-1ubuntu0.10) ...
+Selecting previously unselected package libyaml-0-2:amd64.
+Preparing to unpack .../19-libyaml-0-2_0.2.2-1build2_amd64.deb ...
+Unpacking libyaml-0-2:amd64 (0.2.2-1build2) ...
+Selecting previously unselected package lsb-release.
+Preparing to unpack .../20-lsb-release_11.1.0ubuntu4_all.deb ...
+Unpacking lsb-release (11.1.0ubuntu4) ...
+Selecting previously unselected package python3-dbus.
+Preparing to unpack .../21-python3-dbus_1.2.18-3build1_amd64.deb ...
+Unpacking python3-dbus (1.2.18-3build1) ...
+Selecting previously unselected package python3-gi.
+Preparing to unpack .../22-python3-gi_3.42.1-0ubuntu1_amd64.deb ...
+Unpacking python3-gi (3.42.1-0ubuntu1) ...
+Selecting previously unselected package networkd-dispatcher.
+Preparing to unpack .../23-networkd-dispatcher_2.1-2ubuntu0.22.04.2_all.deb ...
+Unpacking networkd-dispatcher (2.1-2ubuntu0.22.04.2) ...
+Selecting previously unselected package python-apt-common.
+Preparing to unpack .../24-python-apt-common_2.4.0ubuntu4.1_all.deb ...
+Unpacking python-apt-common (2.4.0ubuntu4.1) ...
+Selecting previously unselected package python3-apt.
+Preparing to unpack .../25-python3-apt_2.4.0ubuntu4.1_amd64.deb ...
+Unpacking python3-apt (2.4.0ubuntu4.1) ...
+Selecting previously unselected package python3-pkg-resources.
+Preparing to unpack .../26-python3-pkg-resources_59.6.0-1.2ubuntu0.22.04.3_all.deb ...
+Unpacking python3-pkg-resources (59.6.0-1.2ubuntu0.22.04.3) ...
+Selecting previously unselected package shared-mime-info.
+Preparing to unpack .../27-shared-mime-info_2.1-2_amd64.deb ...
+Unpacking shared-mime-info (2.1-2) ...
+Selecting previously unselected package systemd-timesyncd.
+Preparing to unpack .../28-systemd-timesyncd_249.11-0ubuntu3.17_amd64.deb ...
+Unpacking systemd-timesyncd (249.11-0ubuntu3.17) ...
+Selecting previously unselected package xdg-user-dirs.
+Preparing to unpack .../29-xdg-user-dirs_0.17-2ubuntu4_amd64.deb ...
+Unpacking xdg-user-dirs (0.17-2ubuntu4) ...
+Selecting previously unselected package libcbor0.8:amd64.
+Preparing to unpack .../30-libcbor0.8_0.8.0-2ubuntu1_amd64.deb ...
+Unpacking libcbor0.8:amd64 (0.8.0-2ubuntu1) ...
+Selecting previously unselected package libedit2:amd64.
+Preparing to unpack .../31-libedit2_3.1-20210910-1build1_amd64.deb ...
+Unpacking libedit2:amd64 (3.1-20210910-1build1) ...
+Selecting previously unselected package libfido2-1:amd64.
+Preparing to unpack .../32-libfido2-1_1.10.0-1_amd64.deb ...
+Unpacking libfido2-1:amd64 (1.10.0-1) ...
+Selecting previously unselected package libnghttp2-14:amd64.
+Preparing to unpack .../33-libnghttp2-14_1.43.0-1ubuntu0.2_amd64.deb ...
+Unpacking libnghttp2-14:amd64 (1.43.0-1ubuntu0.2) ...
+Selecting previously unselected package libpsl5:amd64.
+Preparing to unpack .../34-libpsl5_0.21.0-1.2build2_amd64.deb ...
+Unpacking libpsl5:amd64 (0.21.0-1.2build2) ...
+Selecting previously unselected package libxext6:amd64.
+Preparing to unpack .../35-libxext6_2%3a1.3.4-1build1_amd64.deb ...
+Unpacking libxext6:amd64 (2:1.3.4-1build1) ...
+Selecting previously unselected package libxmuu1:amd64.
+Preparing to unpack .../36-libxmuu1_2%3a1.1.3-3_amd64.deb ...
+Unpacking libxmuu1:amd64 (2:1.1.3-3) ...
+Selecting previously unselected package openssh-client.
+Preparing to unpack .../37-openssh-client_1%3a8.9p1-3ubuntu0.13_amd64.deb ...
+Unpacking openssh-client (1:8.9p1-3ubuntu0.13) ...
+Selecting previously unselected package publicsuffix.
+Preparing to unpack .../38-publicsuffix_20211207.1025-1_all.deb ...
+Unpacking publicsuffix (20211207.1025-1) ...
+Selecting previously unselected package python3-distro-info.
+Preparing to unpack .../39-python3-distro-info_1.1ubuntu0.2_all.deb ...
+Unpacking python3-distro-info (1.1ubuntu0.2) ...
+Selecting previously unselected package wget.
+Preparing to unpack .../40-wget_1.21.2-2ubuntu1.1_amd64.deb ...
+Unpacking wget (1.21.2-2ubuntu1.1) ...
+Selecting previously unselected package xauth.
+Preparing to unpack .../41-xauth_1%3a1.1-1build2_amd64.deb ...
+Unpacking xauth (1:1.1-1build2) ...
+Selecting previously unselected package libpackagekit-glib2-18:amd64.
+Preparing to unpack .../42-libpackagekit-glib2-18_1.2.5-2ubuntu3_amd64.deb ...
+Unpacking libpackagekit-glib2-18:amd64 (1.2.5-2ubuntu3) ...
+Selecting previously unselected package gir1.2-packagekitglib-1.0.
+Preparing to unpack .../43-gir1.2-packagekitglib-1.0_1.2.5-2ubuntu3_amd64.deb ...
+Unpacking gir1.2-packagekitglib-1.0 (1.2.5-2ubuntu3) ...
+Selecting previously unselected package librtmp1:amd64.
+Preparing to unpack .../44-librtmp1_2.4+20151223.gitfa8646d.1-2build4_amd64.deb ...
+Unpacking librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2build4) ...
+Selecting previously unselected package libssh-4:amd64.
+Preparing to unpack .../45-libssh-4_0.9.6-2ubuntu0.22.04.5_amd64.deb ...
+Unpacking libssh-4:amd64 (0.9.6-2ubuntu0.22.04.5) ...
+Selecting previously unselected package libcurl3-gnutls:amd64.
+Preparing to unpack .../46-libcurl3-gnutls_7.81.0-1ubuntu1.21_amd64.deb ...
+Unpacking libcurl3-gnutls:amd64 (7.81.0-1ubuntu1.21) ...
+Selecting previously unselected package liberror-perl.
+Preparing to unpack .../47-liberror-perl_0.17029-1_all.deb ...
+Unpacking liberror-perl (0.17029-1) ...
+Selecting previously unselected package git-man.
+Preparing to unpack .../48-git-man_1%3a2.34.1-1ubuntu1.15_all.deb ...
+Unpacking git-man (1:2.34.1-1ubuntu1.15) ...
+Selecting previously unselected package git.
+Preparing to unpack .../49-git_1%3a2.34.1-1ubuntu1.15_amd64.deb ...
+Unpacking git (1:2.34.1-1ubuntu1.15) ...
+Selecting previously unselected package libstemmer0d:amd64.
+Preparing to unpack .../50-libstemmer0d_2.2.0-1build1_amd64.deb ...
+Unpacking libstemmer0d:amd64 (2.2.0-1build1) ...
+Selecting previously unselected package libxmlb2:amd64.
+Preparing to unpack .../51-libxmlb2_0.3.6-2build1_amd64.deb ...
+Unpacking libxmlb2:amd64 (0.3.6-2build1) ...
+Selecting previously unselected package libappstream4:amd64.
+Preparing to unpack .../52-libappstream4_0.15.2-2_amd64.deb ...
+Unpacking libappstream4:amd64 (0.15.2-2) ...
+Selecting previously unselected package libdw1:amd64.
+Preparing to unpack .../53-libdw1_0.186-1ubuntu0.1_amd64.deb ...
+Unpacking libdw1:amd64 (0.186-1ubuntu0.1) ...
+Selecting previously unselected package libglib2.0-bin.
+Preparing to unpack .../54-libglib2.0-bin_2.72.4-0ubuntu2.7_amd64.deb ...
+Unpacking libglib2.0-bin (2.72.4-0ubuntu2.7) ...
+Selecting previously unselected package libunwind8:amd64.
+Preparing to unpack .../55-libunwind8_1.3.2-2build2.1_amd64.deb ...
+Unpacking libunwind8:amd64 (1.3.2-2build2.1) ...
+Selecting previously unselected package libgstreamer1.0-0:amd64.
+Preparing to unpack .../56-libgstreamer1.0-0_1.20.3-0ubuntu1.1_amd64.deb ...
+Unpacking libgstreamer1.0-0:amd64 (1.20.3-0ubuntu1.1) ...
+Selecting previously unselected package libpolkit-gobject-1-0:amd64.
+Preparing to unpack .../57-libpolkit-gobject-1-0_0.105-33_amd64.deb ...
+Unpacking libpolkit-gobject-1-0:amd64 (0.105-33) ...
+Selecting previously unselected package libpolkit-agent-1-0:amd64.
+Preparing to unpack .../58-libpolkit-agent-1-0_0.105-33_amd64.deb ...
+Unpacking libpolkit-agent-1-0:amd64 (0.105-33) ...
+Selecting previously unselected package polkitd.
+Preparing to unpack .../59-polkitd_0.105-33_amd64.deb ...
+Unpacking polkitd (0.105-33) ...
+Selecting previously unselected package pkexec.
+Preparing to unpack .../60-pkexec_0.105-33_amd64.deb ...
+Unpacking pkexec (0.105-33) ...
+Selecting previously unselected package policykit-1.
+Preparing to unpack .../61-policykit-1_0.105-33_amd64.deb ...
+Unpacking policykit-1 (0.105-33) ...
+Selecting previously unselected package packagekit.
+Preparing to unpack .../62-packagekit_1.2.5-2ubuntu3_amd64.deb ...
+Unpacking packagekit (1.2.5-2ubuntu3) ...
+Selecting previously unselected package packagekit-tools.
+Preparing to unpack .../63-packagekit-tools_1.2.5-2ubuntu3_amd64.deb ...
+Unpacking packagekit-tools (1.2.5-2ubuntu3) ...
+Selecting previously unselected package python3-blinker.
+Preparing to unpack .../64-python3-blinker_1.4+dfsg1-0.4_all.deb ...
+Unpacking python3-blinker (1.4+dfsg1-0.4) ...
+Selecting previously unselected package python3-cffi-backend:amd64.
+Preparing to unpack .../65-python3-cffi-backend_1.15.0-1build2_amd64.deb ...
+Unpacking python3-cffi-backend:amd64 (1.15.0-1build2) ...
+Selecting previously unselected package python3-cryptography.
+Preparing to unpack .../66-python3-cryptography_3.4.8-1ubuntu2.2_amd64.deb ...
+Unpacking python3-cryptography (3.4.8-1ubuntu2.2) ...
+Selecting previously unselected package python3-pyparsing.
+Preparing to unpack .../67-python3-pyparsing_2.4.7-1_all.deb ...
+Unpacking python3-pyparsing (2.4.7-1) ...
+Selecting previously unselected package python3-httplib2.
+Preparing to unpack .../68-python3-httplib2_0.20.2-2_all.deb ...
+Unpacking python3-httplib2 (0.20.2-2) ...
+Selecting previously unselected package python3-more-itertools.
+Preparing to unpack .../69-python3-more-itertools_8.10.0-2_all.deb ...
+Unpacking python3-more-itertools (8.10.0-2) ...
+Selecting previously unselected package python3-zipp.
+Preparing to unpack .../70-python3-zipp_1.0.0-3ubuntu0.1_all.deb ...
+Unpacking python3-zipp (1.0.0-3ubuntu0.1) ...
+Selecting previously unselected package python3-importlib-metadata.
+Preparing to unpack .../71-python3-importlib-metadata_4.6.4-1_all.deb ...
+Unpacking python3-importlib-metadata (4.6.4-1) ...
+Selecting previously unselected package python3-jeepney.
+Preparing to unpack .../72-python3-jeepney_0.7.1-3_all.deb ...
+Unpacking python3-jeepney (0.7.1-3) ...
+Selecting previously unselected package python3-jwt.
+Preparing to unpack .../73-python3-jwt_2.3.0-1ubuntu0.2_all.deb ...
+Unpacking python3-jwt (2.3.0-1ubuntu0.2) ...
+Selecting previously unselected package python3-secretstorage.
+Preparing to unpack .../74-python3-secretstorage_3.3.1-1_all.deb ...
+Unpacking python3-secretstorage (3.3.1-1) ...
+Selecting previously unselected package python3-keyring.
+Preparing to unpack .../75-python3-keyring_23.5.0-1_all.deb ...
+Unpacking python3-keyring (23.5.0-1) ...
+Selecting previously unselected package python3-lazr.uri.
+Preparing to unpack .../76-python3-lazr.uri_1.0.6-2_all.deb ...
+Unpacking python3-lazr.uri (1.0.6-2) ...
+Selecting previously unselected package python3-wadllib.
+Preparing to unpack .../77-python3-wadllib_1.3.6-1_all.deb ...
+Unpacking python3-wadllib (1.3.6-1) ...
+Selecting previously unselected package python3-distro.
+Preparing to unpack .../78-python3-distro_1.7.0-1_all.deb ...
+Unpacking python3-distro (1.7.0-1) ...
+Selecting previously unselected package python3-oauthlib.
+Preparing to unpack .../79-python3-oauthlib_3.2.0-1ubuntu0.1_all.deb ...
+Unpacking python3-oauthlib (3.2.0-1ubuntu0.1) ...
+Selecting previously unselected package python3-six.
+Preparing to unpack .../80-python3-six_1.16.0-3ubuntu1_all.deb ...
+Unpacking python3-six (1.16.0-3ubuntu1) ...
+Selecting previously unselected package python3-lazr.restfulclient.
+Preparing to unpack .../81-python3-lazr.restfulclient_0.14.4-1_all.deb ...
+Unpacking python3-lazr.restfulclient (0.14.4-1) ...
+Selecting previously unselected package python3-launchpadlib.
+Preparing to unpack .../82-python3-launchpadlib_1.10.16-1_all.deb ...
+Unpacking python3-launchpadlib (1.10.16-1) ...
+Selecting previously unselected package python3-software-properties.
+Preparing to unpack .../83-python3-software-properties_0.99.22.9_all.deb ...
+Unpacking python3-software-properties (0.99.22.9) ...
+Selecting previously unselected package software-properties-common.
+Preparing to unpack .../84-software-properties-common_0.99.22.9_all.deb ...
+Unpacking software-properties-common (0.99.22.9) ...
+Selecting previously unselected package unattended-upgrades.
+Preparing to unpack .../85-unattended-upgrades_2.8ubuntu1_all.deb ...
+Unpacking unattended-upgrades (2.8ubuntu1) ...
+Setting up media-types (7.0.0) ...
+Setting up systemd-sysv (249.11-0ubuntu3.17) ...
+Setting up libpsl5:amd64 (0.21.0-1.2build2) ...
+Setting up wget (1.21.2-2ubuntu1.1) ...
+Setting up xdg-user-dirs (0.17-2ubuntu4) ...
+Setting up libyaml-0-2:amd64 (0.2.2-1build2) ...
+Setting up libglib2.0-0:amd64 (2.72.4-0ubuntu2.7) ...
+No schema files found: doing nothing.
+Setting up distro-info-data (0.52ubuntu0.11) ...
+Setting up libxmlb2:amd64 (0.3.6-2build1) ...
+Setting up libcbor0.8:amd64 (0.8.0-2ubuntu1) ...
+Setting up libedit2:amd64 (3.1-20210910-1build1) ...
+Setting up libnghttp2-14:amd64 (1.43.0-1ubuntu0.2) ...
+Setting up less (590-1ubuntu0.22.04.3) ...
+Setting up libxext6:amd64 (2:1.3.4-1build1) ...
+Setting up libpackagekit-glib2-18:amd64 (1.2.5-2ubuntu3) ...
+Setting up libnss-systemd:amd64 (249.11-0ubuntu3.17) ...
+First installation detected...
+Checking NSS setup...
+Setting up libunwind8:amd64 (1.3.2-2build2.1) ...
+Setting up libcap2-bin (1:2.44-1ubuntu0.22.04.2) ...
+Setting up liberror-perl (0.17029-1) ...
+Setting up libglib2.0-data (2.72.4-0ubuntu2.7) ...
+Setting up gnupg-l10n (2.2.27-3ubuntu2.5) ...
+Setting up librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2build4) ...
+Setting up libdbus-1-3:amd64 (1.12.20-2ubuntu4.1) ...
+Setting up dbus (1.12.20-2ubuntu4.1) ...
+Setting up systemd-timesyncd (249.11-0ubuntu3.17) ...
+Created symlink /etc/systemd/system/dbus-org.freedesktop.timesync1.service → /lib/systemd/system/systemd-timesyncd.service.
+Created symlink /etc/systemd/system/sysinit.target.wants/systemd-timesyncd.service → /lib/systemd/system/systemd-timesyncd.service.
+Setting up libssh-4:amd64 (0.9.6-2ubuntu0.22.04.5) ...
+Setting up python-apt-common (2.4.0ubuntu4.1) ...
+Setting up dmsetup (2:1.02.175-2.1ubuntu5) ...
+Setting up libmpdec3:amd64 (2.5.1-2build2) ...
+Setting up gpgconf (2.2.27-3ubuntu2.5) ...
+Setting up libpam-systemd:amd64 (249.11-0ubuntu3.17) ...
+Setting up git-man (1:2.34.1-1ubuntu1.15) ...
+Setting up libgirepository-1.0-1:amd64 (1.72.0-1) ...
+Setting up libstemmer0d:amd64 (2.2.0-1build1) ...
+Setting up libfido2-1:amd64 (1.10.0-1) ...
+Setting up openssl (3.0.2-0ubuntu1.20) ...
+Setting up libelf1:amd64 (0.186-1ubuntu0.1) ...
+Setting up libpam-cap:amd64 (1:2.44-1ubuntu0.22.04.2) ...
+Setting up publicsuffix (20211207.1025-1) ...
+Setting up iso-codes (4.9.0-1) ...
+Setting up libxmuu1:amd64 (2:1.1.3-3) ...
+Setting up gpg (2.2.27-3ubuntu2.5) ...
+Setting up libpolkit-gobject-1-0:amd64 (0.105-33) ...
+Setting up libicu70:amd64 (70.1-2) ...
+Setting up gnupg-utils (2.2.27-3ubuntu2.5) ...
+Setting up libdw1:amd64 (0.186-1ubuntu0.1) ...
+Setting up gpg-agent (2.2.27-3ubuntu2.5) ...
+Setting up openssh-client (1:8.9p1-3ubuntu0.13) ...
+update-alternatives: using /usr/bin/ssh to provide /usr/bin/rsh (rsh) in auto mode
+update-alternatives: warning: skip creation of /usr/share/man/man1/rsh.1.gz because associated file /usr/share/man/man1/ssh.1.gz (of link group rsh) doesn't exist
+update-alternatives: using /usr/bin/slogin to provide /usr/bin/rlogin (rlogin) in auto mode
+update-alternatives: warning: skip creation of /usr/share/man/man1/rlogin.1.gz because associated file /usr/share/man/man1/slogin.1.gz (of link group rlogin) doesn't exist
+update-alternatives: using /usr/bin/scp to provide /usr/bin/rcp (rcp) in auto mode
+update-alternatives: warning: skip creation of /usr/share/man/man1/rcp.1.gz because associated file /usr/share/man/man1/scp.1.gz (of link group rcp) doesn't exist
+Setting up gpgsm (2.2.27-3ubuntu2.5) ...
+Setting up libglib2.0-bin (2.72.4-0ubuntu2.7) ...
+Setting up libcurl3-gnutls:amd64 (7.81.0-1ubuntu1.21) ...
+Setting up libpython3.10-stdlib:amd64 (3.10.12-1~22.04.13) ...
+Setting up dirmngr (2.2.27-3ubuntu2.5) ...
+Setting up ca-certificates (20240203~22.04.1) ...
+Updating certificates in /etc/ssl/certs...
+146 added, 0 removed; done.
+Setting up git (1:2.34.1-1ubuntu1.15) ...
+Setting up gir1.2-glib-2.0:amd64 (1.72.0-1) ...
+Setting up gpg-wks-server (2.2.27-3ubuntu2.5) ...
+Setting up xauth (1:1.1-1build2) ...
+Setting up libpolkit-agent-1-0:amd64 (0.105-33) ...
+Setting up libxml2:amd64 (2.9.13+dfsg-1ubuntu0.10) ...
+Setting up polkitd (0.105-33) ...
+Setting up libgstreamer1.0-0:amd64 (1.20.3-0ubuntu1.1) ...
+Setcap worked! gst-ptp-helper is not suid!
+Setting up libpython3-stdlib:amd64 (3.10.6-1~22.04.1) ...
+Setting up python3.10 (3.10.12-1~22.04.13) ...
+Setting up gpg-wks-client (2.2.27-3ubuntu2.5) ...
+Setting up pkexec (0.105-33) ...
+Setting up python3 (3.10.6-1~22.04.1) ...
+Setting up libappstream4:amd64 (0.15.2-2) ...
+Setting up python3-six (1.16.0-3ubuntu1) ...
+Setting up gir1.2-packagekitglib-1.0 (1.2.5-2ubuntu3) ...
+Setting up python3-pyparsing (2.4.7-1) ...
+Setting up python3-gi (3.42.1-0ubuntu1) ...
+Setting up shared-mime-info (2.1-2) ...
+Setting up python3-jeepney (0.7.1-3) ...
+Setting up gnupg (2.2.27-3ubuntu2.5) ...
+Setting up python3-httplib2 (0.20.2-2) ...
+Setting up lsb-release (11.1.0ubuntu4) ...
+Setting up python3-distro-info (1.1ubuntu0.2) ...
+Setting up policykit-1 (0.105-33) ...
+Setting up python3-cffi-backend:amd64 (1.15.0-1build2) ...
+Setting up python3-blinker (1.4+dfsg1-0.4) ...
+Setting up python3-pkg-resources (59.6.0-1.2ubuntu0.22.04.3) ...
+Setting up python3-more-itertools (8.10.0-2) ...
+Setting up python3-dbus (1.2.18-3build1) ...
+Setting up python3-distro (1.7.0-1) ...
+Setting up python3-jwt (2.3.0-1ubuntu0.2) ...
+Setting up python3-apt (2.4.0ubuntu4.1) ...
+Setting up python3-lazr.uri (1.0.6-2) ...
+Setting up python3-zipp (1.0.0-3ubuntu0.1) ...
+Setting up unattended-upgrades (2.8ubuntu1) ...
+
+Creating config file /etc/apt/apt.conf.d/20auto-upgrades with new version
+
+Creating config file /etc/apt/apt.conf.d/50unattended-upgrades with new version
+Created symlink /etc/systemd/system/multi-user.target.wants/unattended-upgrades.service → /lib/systemd/system/unattended-upgrades.service.
+Setting up python3-cryptography (3.4.8-1ubuntu2.2) ...
+Setting up python3-wadllib (1.3.6-1) ...
+Setting up packagekit (1.2.5-2ubuntu3) ...
+invoke-rc.d: could not determine current runlevel
+invoke-rc.d: policy-rc.d denied execution of force-reload.
+Failed to open connection to "system" message bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+Created symlink /etc/systemd/user/sockets.target.wants/pk-debconf-helper.socket → /usr/lib/systemd/user/pk-debconf-helper.socket.
+Setting up networkd-dispatcher (2.1-2ubuntu0.22.04.2) ...
+Created symlink /etc/systemd/system/multi-user.target.wants/networkd-dispatcher.service → /lib/systemd/system/networkd-dispatcher.service.
+Setting up packagekit-tools (1.2.5-2ubuntu3) ...
+Setting up python3-importlib-metadata (4.6.4-1) ...
+Setting up python3-oauthlib (3.2.0-1ubuntu0.1) ...
+Setting up python3-secretstorage (3.3.1-1) ...
+Setting up python3-keyring (23.5.0-1) ...
+Setting up python3-lazr.restfulclient (0.14.4-1) ...
+Setting up python3-launchpadlib (1.10.16-1) ...
+Setting up python3-software-properties (0.99.22.9) ...
+Setting up software-properties-common (0.99.22.9) ...
+Processing triggers for libc-bin (2.35-0ubuntu3.10) ...
+Processing triggers for ca-certificates (20240203~22.04.1) ...
+Updating certificates in /etc/ssl/certs...
+0 added, 0 removed; done.
+Running hooks in /etc/ca-certificates/update.d...
+done.
+Processing triggers for dbus (1.12.20-2ubuntu4.1) ...
+[91m--2026-01-16 12:17:01--  https://apt.llvm.org/llvm.sh
+[0m[91mResolving apt.llvm.org (apt.llvm.org)... [0m[91m146.75.118.49, 2a04:4e42:8d::561
+Connecting to apt.llvm.org (apt.llvm.org)|146.75.118.49|:443... [0m[91mconnected.
+[0m[91mHTTP request sent, awaiting response... [0m[91m200 OK
+Length: 7432 (7.3K) [application/octet-stream]
+Saving to: 'llvm.sh'
+[0m[91m
+     0K .......                                               100% 30.4M=0s
+
+[0m[91m2026-01-16 12:17:01 (30.4 MB/s) - 'llvm.sh' saved [7432/7432]
+
+[0m[91m+ CURRENT_LLVM_STABLE=20
++ BASE_URL=http://apt.llvm.org
++ NEW_DEBIAN_DISTROS=("trixie" "forky" "unstable")
++ LLVM_VERSION=20
++ ALL=0
+[0m[91m++ lsb_release -is
+[0m[91m+ DISTRO=Ubuntu
+[0m[91m++ lsb_release -cs
+[0m[91m+ VERSION_CODENAME=jammy
+[0m[91m++ lsb_release -sr
+[0m[91m+ VERSION=22.04
++ UBUNTU_CODENAME=
++ CODENAME_FROM_ARGUMENTS=
++ source /etc/os-release
+[0m[91m++ PRETTY_NAME='Ubuntu 22.04.5 LTS'
+++ NAME=Ubuntu
+++ VERSION_ID=22.04
+++ VERSION='22.04.5 LTS (Jammy Jellyfish)'
+++ VERSION_CODENAME=jammy
+++ ID=ubuntu
+++ ID_LIKE=debian
+[0m[91m++ HOME_URL=https://www.ubuntu.com/
+[0m[91m++ SUPPORT_URL=https://help.ubuntu.com/
+[0m[91m++ BUG_REPORT_URL=https://bugs.launchpad.net/ubuntu/
+[0m[91m++ PRIVACY_POLICY_URL=https://www.ubuntu.com/legal/terms-and-policies/privacy-policy
+[0m[91m++ UBUNTU_CODENAME=jammy
+[0m[91m+ DISTRO=ubuntu
++ is_new_debian=0
++ [[ ubuntu == \d\e\b\i\a\n ]]
++ needed_binaries=(lsb_release wget gpg)
++ [[ 0 -eq 0 ]]
++ needed_binaries+=(add-apt-repository)
++ missing_binaries=()
++ using_curl=
+[0m[91m+ for binary in "${needed_binaries[@]}"
++ command -v lsb_release
+[0m[91m+ for binary in "${needed_binaries[@]}"
++ command -v wget
+[0m[91m+ for binary in "${needed_binaries[@]}"
++ command -v gpg
+[0m[91m+ for binary in "${needed_binaries[@]}"
+[0m[91m+ command -v add-apt-repository
++ [[ 0 -gt 0 ]]
+[0m[91m+ case ${DISTRO} in
+[0m[91m+ [[ -n jammy ]]
++ CODENAME=jammy
++ [[ -n jammy ]]
+[0m[91m+ LINKNAME=-jammy
++ '[' 1 -ge 1 ']'
++ '[' 1 '!=' - ']'
++ '[' 13 '!=' all ']'
+[0m[91m+ LLVM_VERSION=13
+[0m[91m+ OPTIND=2
+[0m[91m+ '[' 1 -ge 2 ']'
++ getopts :hm:n: arg
+[0m[91m+ [[ 0 -ne 0 ]]
+[0m[91m+ declare -A LLVM_VERSION_PATTERNS
++ LLVM_VERSION_PATTERNS[9]=-9
++ LLVM_VERSION_PATTERNS[10]=-10
++ LLVM_VERSION_PATTERNS[11]=-11
++ LLVM_VERSION_PATTERNS[12]=-12
++ LLVM_VERSION_PATTERNS[13]=-13
++ LLVM_VERSION_PATTERNS[14]=-14
++ LLVM_VERSION_PATTERNS[15]=-15
++ LLVM_VERSION_PATTERNS[16]=-16
++ LLVM_VERSION_PATTERNS[17]=-17
++ LLVM_VERSION_PATTERNS[18]=-18
++ LLVM_VERSION_PATTERNS[19]=-19
++ LLVM_VERSION_PATTERNS[20]=-20
++ LLVM_VERSION_PATTERNS[21]=-21
++ LLVM_VERSION_PATTERNS[22]=
+[0m[91m+ '[' '!' _ ']'
++ LLVM_VERSION_STRING=-13
++ [[ -n jammy ]]
++ REPO_NAME='deb http://apt.llvm.org/jammy/  llvm-toolchain-jammy-13 main'
++ wget -q --method=HEAD http://apt.llvm.org/jammy
+[0m[91m+ [[ ! -f /etc/apt/trusted.gpg.d/apt.llvm.org.asc ]]
++ [[ -z '' ]]
+[0m[91m+ wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key
+[0m[91m+ tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+[0m[91m++ apt-key list
+[0m[91m++ grep -i llvm
+[0m-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+mQINBFE9lCwBEADi0WUAApM/mgHJRU8lVkkw0CHsZNpqaQDNaHefD6Rw3S4LxNmM
+EZaOTkhP200XZM8lVdbfUW9xSjA3oPldc1HG26NjbqqCmWpdo2fb+r7VmU2dq3NM
+R18ZlKixiLDE6OUfaXWKamZsXb6ITTYmgTO6orQWYrnW6ckYHSeaAkW0wkDAryl2
+B5v8aoFnQ1rFiVEMo4NGzw4UX+MelF7rxaaregmKVTPiqCOSPJ1McC1dHFN533FY
+Wh/RVLKWo6npu+owtwYFQW+zyQhKzSIMvNujFRzhIxzxR9Gn87MoLAyfgKEzrbbT
+DhqqNXTxS4UMUKCQaO93TzetX/EBrRpJj+vP640yio80h4Dr5pAd7+LnKwgpTDk1
+G88bBXJAcPZnTSKu9I2c6KY4iRNbvRz4i+ZdwwZtdW4nSdl2792L7Sl7Nc44uLL/
+ZqkKDXEBF6lsX5XpABwyK89S/SbHOytXv9o4puv+65Ac5/UShspQTMSKGZgvDauU
+cs8kE1U9dPOqVNCYq9Nfwinkf6RxV1k1+gwtclxQuY7UpKXP0hNAXjAiA5KS5Crq
+7aaJg9q2F4bub0mNU6n7UI6vXguF2n4SEtzPRk6RP+4TiT3bZUsmr+1ktogyOJCc
+Ha8G5VdL+NBIYQthOcieYCBnTeIH7D3Sp6FYQTYtVbKFzmMK+36ERreL/wARAQAB
+tD1TeWx2ZXN0cmUgTGVkcnUgLSBEZWJpYW4gTExWTSBwYWNrYWdlcyA8c3lsdmVz
+dHJlQGRlYmlhbi5vcmc+iQI4BBMBAgAiBQJRPZQsAhsDBgsJCAcDAgYVCAIJCgsE
+FgIDAQIeAQIXgAAKCRAVz00Yr090Ibx+EADArS/hvkDF8juWMXxh17CgR0WZlHCC
+9CTBWkg5a0bNN/3bb97cPQt/vIKWjQtkQpav6/5JTVCSx2riL4FHYhH0iuo4iAPR
+udC7Cvg8g7bSPrKO6tenQZNvQm+tUmBHgFiMBJi92AjZ/Qn1Shg7p9ITivFxpLyX
+wpmnF1OKyI2Kof2rm4BFwfSWuf8Fvh7kDMRLHv+MlnK/7j/BNpKdozXxLcwoFBmn
+l0WjpAH3OFF7Pvm1LJdf1DjWKH0Dc3sc6zxtmBR/KHHg6kK4BGQNnFKujcP7TVdv
+gMYv84kun14pnwjZcqOtN3UJtcx22880DOQzinoMs3Q4w4o05oIF+sSgHViFpc3W
+R0v+RllnH05vKZo+LDzc83DQVrdwliV12eHxrMQ8UYg88zCbF/cHHnlzZWAJgftg
+hB08v1BKPgYRUzwJ6VdVqXYcZWEaUJmQAPuAALyZESw94hSo28FAn0/gzEc5uOYx
+K+xG/lFwgAGYNb3uGM5m0P6LVTfdg6vDwwOeTNIExVk3KVFXeSQef2ZMkhwA7wya
+KJptkb62wBHFE+o9TUdtMCY6qONxMMdwioRE5BYNwAsS1PnRD2+jtlI0DzvKHt7B
+MWd8hnoUKhMeZ9TNmo+8CpsAtXZcBho0zPGz/R8NlJhAWpdAZ1CmcPo83EW86Yq7
+BxQUKnNHcwj2ebkCDQRRPZQsARAA4jxYmbTHwmMjqSizlMJYNuGOpIidEdx9zQ5g
+zOr431/VfWq4S+VhMDhs15j9lyml0y4ok215VRFwrAREDg6UPMr7ajLmBQGau0Fc
+bvZJ90l4NjXp5p0NEE/qOb9UEHT7EGkEhaZ1ekkWFTWCgsy7rRXfZLxB6sk7pzLC
+DshyW3zjIakWAnpQ5j5obiDy708pReAuGB94NSyb1HoW/xGsGgvvCw4r0w3xPStw
+F1PhmScE6NTBIfLliea3pl8vhKPlCh54Hk7I8QGjo1ETlRP4Qll1ZxHJ8u25f/ta
+RES2Aw8Hi7j0EVcZ6MT9JWTI83yUcnUlZPZS2HyeWcUj+8nUC8W4N8An+aNps9l/
+21inIl2TbGo3Yn1JQLnA1YCoGwC34g8QZTJhElEQBN0X29ayWW6OdFx8MDvllbBV
+ymmKq2lK1U55mQTfDli7S3vfGz9Gp/oQwZ8bQpOeUkc5hbZszYwP4RX+68xDPfn+
+M9udl+qW9wu+LyePbW6HX90LmkhNkkY2ZzUPRPDHZANU5btaPXc2H7edX4y4maQa
+xenqD0lGh9LGz/mps4HEZtCI5CY8o0uCMF3lT0XfXhuLksr7Pxv57yue8LLTItOJ
+d9Hmzp9G97SRYYeqU+8lyNXtU2PdrLLq7QHkzrsloG78lCpQcalHGACJzrlUWVP/
+fN3Ht3kAEQEAAYkCHwQYAQIACQUCUT2ULAIbDAAKCRAVz00Yr090IbhWEADbr50X
+OEXMIMGRLe+YMjeMX9NG4jxs0jZaWHc/WrGR+CCSUb9r6aPXeLo+45949uEfdSsB
+pbaEdNWxF5Vr1CSjuO5siIlgDjmT655voXo67xVpEN4HhMrxugDJfCa6z97P0+ML
+PdDxim57uNqkam9XIq9hKQaurxMAECDPmlEXI4QT3eu5qw5/knMzDMZj4Vi6hovL
+wvvAeLHO/jsyfIdNmhBGU2RWCEZ9uo/MeerPHtRPfg74g+9PPfP6nyHD2Wes6yGd
+oVQwtPNAQD6Cj7EaA2xdZYLJ7/jW6yiPu98FFWP74FN2dlyEA2uVziLsfBrgpS4l
+tVOlrO2YzkkqUGrybzbLpj6eeHx+Cd7wcjI8CalsqtL6cG8cUEjtWQUHyTbQWAgG
+5VPEgIAVhJ6RTZ26i/G+4J8neKyRs4vz+57UGwY6zI4AB1ZcWGEE3Bf+CDEDgmnP
+LSwbnHefK9IljT9XU98PelSryUO/5UPw7leE0akXKB4DtekToO226px1VnGp3Bov
+1GBGvpHvL2WizEwdk+nfk8LtrLzej+9FtIcq3uIrYnsac47Pf7p0otcFeTJTjSq3
+krCaoG4Hx0zGQG2ZFpHrSrZTVy6lxvIdfi0beMgY6h78p6M9eYZHQHc02DjFkQXN
+bXb5c6gCHESH5PXwPU4jQEE7Ib9J6sbk7ZT2Mw==
+=j+4q
+-----END PGP PUBLIC KEY BLOCK-----
+[91m+ [[ -z /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+uid           [ unknown] Sylvestre Ledru - Debian LLVM packages <sylvestre@debian.org> ]]
+[0m[91m+ [[ jammy == \b\o\o\k\w\o\r\m ]]
+[0m[91m+ [[ 0 -eq 1 ]]
+[0m[91m+ add-apt-repository -y 'deb http://apt.llvm.org/jammy/  llvm-toolchain-jammy-13 main'
+[0mGet:1 https://apt.llvm.org/jammy llvm-toolchain-jammy-13 InRelease [6827 B]
+Get:2 https://apt.llvm.org/jammy llvm-toolchain-jammy-13/main amd64 Packages [10.6 kB]
+Hit:3 http://archive.ubuntu.com/ubuntu jammy InRelease
+Hit:4 http://archive.ubuntu.com/ubuntu jammy-updates InRelease
+Hit:5 http://security.ubuntu.com/ubuntu jammy-security InRelease
+Hit:6 http://archive.ubuntu.com/ubuntu jammy-backports InRelease
+Fetched 17.5 kB in 2s (9265 B/s)
+Reading package lists...
+Repository: 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-13 main'
+Description:
+Archive for codename: llvm-toolchain-jammy-13 components: main
+More info: http://apt.llvm.org/jammy/
+Adding repository.
+Adding deb entry to /etc/apt/sources.list.d/archive_uri-http_apt_llvm_org_jammy_-jammy.list
+Adding disabled deb-src entry to /etc/apt/sources.list.d/archive_uri-http_apt_llvm_org_jammy_-jammy.list
+[91m+ apt-get update
+[0mHit:2 http://archive.ubuntu.com/ubuntu jammy InRelease
+Hit:3 http://archive.ubuntu.com/ubuntu jammy-updates InRelease
+Hit:1 https://apt.llvm.org/jammy llvm-toolchain-jammy-13 InRelease
+Hit:4 http://archive.ubuntu.com/ubuntu jammy-backports InRelease
+Hit:5 http://security.ubuntu.com/ubuntu jammy-security InRelease
+Reading package lists...
+[91m+ PKG='clang-13 lldb-13 lld-13 clangd-13'
++ [[ 0 -eq 1 ]]
++ apt-get install -y clang-13 lldb-13 lld-13 clangd-13
+[0mReading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  binfmt-support icu-devtools lib32gcc-s1 lib32stdc++6 libabsl20210324
+  libc-ares2 libc-dev-bin libc6 libc6-dev libc6-i386 libclang-common-13-dev
+  libclang-cpp13 libclang1-13 libffi-dev libgc1 libgrpc++1 libgrpc10
+  libicu-dev liblldb-13 libllvm13 libncurses-dev libobjc-11-dev libobjc4
+  libpfm4 libpipeline1 libprotobuf23 libpython3.10 libtinfo-dev libxml2-dev
+  libz3-4 libz3-dev llvm-13 llvm-13-dev llvm-13-linker-tools llvm-13-runtime
+  llvm-13-tools python3-lldb-13 python3-pygments python3-yaml
+Suggested packages:
+  clang-13-doc glibc-doc locales icu-doc ncurses-doc pkg-config llvm-13-doc
+  python-pygments-doc ttf-bitstream-vera
+Recommended packages:
+  libnss-nis libnss-nisplus
+The following NEW packages will be installed:
+  binfmt-support clang-13 clangd-13 icu-devtools lib32gcc-s1 lib32stdc++6
+  libabsl20210324 libc-ares2 libc6-i386 libclang-common-13-dev libclang-cpp13
+  libclang1-13 libffi-dev libgc1 libgrpc++1 libgrpc10 libicu-dev liblldb-13
+  libllvm13 libncurses-dev libobjc-11-dev libobjc4 libpfm4 libpipeline1
+  libprotobuf23 libpython3.10 libtinfo-dev libxml2-dev libz3-4 libz3-dev
+  lld-13 lldb-13 llvm-13 llvm-13-dev llvm-13-linker-tools llvm-13-runtime
+  llvm-13-tools python3-lldb-13 python3-pygments python3-yaml
+The following packages will be upgraded:
+  libc-dev-bin libc6 libc6-dev
+3 upgraded, 40 newly installed, 0 to remove and 17 not upgraded.
+Need to get 140 MB of archives.
+After this operation, 736 MB of additional disk space will be used.
+Get:1 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libc6-dev amd64 2.35-0ubuntu3.11 [2100 kB]
+Get:2 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libc-dev-bin amd64 2.35-0ubuntu3.11 [20.3 kB]
+Get:3 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libc6 amd64 2.35-0ubuntu3.11 [3235 kB]
+Get:4 http://archive.ubuntu.com/ubuntu jammy/main amd64 python3-yaml amd64 5.4.1-1ubuntu1 [129 kB]
+Get:5 http://archive.ubuntu.com/ubuntu jammy/main amd64 libpipeline1 amd64 1.5.5-1 [23.5 kB]
+Get:6 http://archive.ubuntu.com/ubuntu jammy/main amd64 binfmt-support amd64 2.2.1-2 [55.8 kB]
+Get:7 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libllvm13 amd64 1:13.0.1-2ubuntu2.2 [22.2 MB]
+Get:8 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libclang-cpp13 amd64 1:13.0.1-2ubuntu2.2 [11.7 MB]
+Get:9 http://archive.ubuntu.com/ubuntu jammy/main amd64 libgc1 amd64 1:8.0.6-1.1build1 [96.8 kB]
+Get:10 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 libobjc4 amd64 12.3.0-1ubuntu1~22.04.2 [48.7 kB]
+Get:11 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 libobjc-11-dev amd64 11.4.0-1ubuntu1~22.04.2 [196 kB]
+Get:12 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libc6-i386 amd64 2.35-0ubuntu3.11 [2838 kB]
+Get:13 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 lib32gcc-s1 amd64 12.3.0-1ubuntu1~22.04.2 [63.9 kB]
+Get:14 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 lib32stdc++6 amd64 12.3.0-1ubuntu1~22.04.2 [739 kB]
+Get:15 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 libclang-common-13-dev amd64 1:13.0.1-2ubuntu2.2 [5788 kB]
+Get:16 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 llvm-13-linker-tools amd64 1:13.0.1-2ubuntu2.2 [1314 kB]
+Get:17 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 libclang1-13 amd64 1:13.0.1-2ubuntu2.2 [6878 kB]
+Get:18 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 clang-13 amd64 1:13.0.1-2ubuntu2.2 [80.3 kB]
+Get:19 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libabsl20210324 amd64 0~20210324.2-2ubuntu0.2 [386 kB]
+Get:20 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libc-ares2 amd64 1.18.1-1ubuntu0.22.04.3 [45.1 kB]
+Get:21 http://archive.ubuntu.com/ubuntu jammy/universe amd64 libgrpc10 amd64 1.30.2-3build6 [1470 kB]
+Get:22 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libprotobuf23 amd64 3.12.4-1ubuntu7.22.04.4 [878 kB]
+Get:23 http://archive.ubuntu.com/ubuntu jammy/universe amd64 libgrpc++1 amd64 1.30.2-3build6 [402 kB]
+Get:24 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 clangd-13 amd64 1:13.0.1-2ubuntu2.2 [2786 kB]
+Get:25 http://archive.ubuntu.com/ubuntu jammy/main amd64 icu-devtools amd64 70.1-2 [197 kB]
+Get:26 http://archive.ubuntu.com/ubuntu jammy/main amd64 libicu-dev amd64 70.1-2 [11.6 MB]
+Get:27 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libpython3.10 amd64 3.10.12-1~22.04.13 [1949 kB]
+Get:28 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 liblldb-13 amd64 1:13.0.1-2ubuntu2.2 [4153 kB]
+Get:29 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libncurses-dev amd64 6.3-2ubuntu0.1 [381 kB]
+Get:30 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libtinfo-dev amd64 6.3-2ubuntu0.1 [780 B]
+Get:31 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libxml2-dev amd64 2.9.13+dfsg-1ubuntu0.10 [804 kB]
+Get:32 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 lld-13 amd64 1:13.0.1-2ubuntu2.2 [1463 kB]
+Get:33 http://archive.ubuntu.com/ubuntu jammy/main amd64 libffi-dev amd64 3.4.2-4 [63.7 kB]
+Get:34 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 llvm-13-runtime amd64 1:13.0.1-2ubuntu2.2 [233 kB]
+Get:35 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libpfm4 amd64 4.11.1+git32-gd0b85fb-1ubuntu0.1 [345 kB]
+Get:36 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 llvm-13 amd64 1:13.0.1-2ubuntu2.2 [11.9 MB]
+Get:37 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 python3-pygments all 2.11.2+dfsg-2ubuntu0.1 [750 kB]
+Get:38 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 llvm-13-tools amd64 1:13.0.1-2ubuntu2.2 [397 kB]
+Get:39 http://archive.ubuntu.com/ubuntu jammy/universe amd64 libz3-4 amd64 4.8.12-1 [5766 kB]
+Get:40 http://archive.ubuntu.com/ubuntu jammy/universe amd64 libz3-dev amd64 4.8.12-1 [72.2 kB]
+Get:41 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 llvm-13-dev amd64 1:13.0.1-2ubuntu2.2 [35.0 MB]
+Get:42 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 python3-lldb-13 amd64 1:13.0.1-2ubuntu2.2 [105 kB]
+Get:43 http://archive.ubuntu.com/ubuntu jammy-updates/universe amd64 lldb-13 amd64 1:13.0.1-2ubuntu2.2 [1101 kB]
+[91mdebconf: delaying package configuration, since apt-utils is not installed
+[0mFetched 140 MB in 5s (30.1 MB/s)
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 19531 files and directories currently installed.)
+Preparing to unpack .../libc6-dev_2.35-0ubuntu3.11_amd64.deb ...
+Unpacking libc6-dev:amd64 (2.35-0ubuntu3.11) over (2.35-0ubuntu3.10) ...
+Preparing to unpack .../libc-dev-bin_2.35-0ubuntu3.11_amd64.deb ...
+Unpacking libc-dev-bin (2.35-0ubuntu3.11) over (2.35-0ubuntu3.10) ...
+Preparing to unpack .../libc6_2.35-0ubuntu3.11_amd64.deb ...
+Unpacking libc6:amd64 (2.35-0ubuntu3.11) over (2.35-0ubuntu3.10) ...
+Setting up libc6:amd64 (2.35-0ubuntu3.11) ...
+Selecting previously unselected package python3-yaml.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 19531 files and directories currently installed.)
+Preparing to unpack .../00-python3-yaml_5.4.1-1ubuntu1_amd64.deb ...
+Unpacking python3-yaml (5.4.1-1ubuntu1) ...
+Selecting previously unselected package libpipeline1:amd64.
+Preparing to unpack .../01-libpipeline1_1.5.5-1_amd64.deb ...
+Unpacking libpipeline1:amd64 (1.5.5-1) ...
+Selecting previously unselected package binfmt-support.
+Preparing to unpack .../02-binfmt-support_2.2.1-2_amd64.deb ...
+Unpacking binfmt-support (2.2.1-2) ...
+Selecting previously unselected package libllvm13:amd64.
+Preparing to unpack .../03-libllvm13_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking libllvm13:amd64 (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package libclang-cpp13.
+Preparing to unpack .../04-libclang-cpp13_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking libclang-cpp13 (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package libgc1:amd64.
+Preparing to unpack .../05-libgc1_1%3a8.0.6-1.1build1_amd64.deb ...
+Unpacking libgc1:amd64 (1:8.0.6-1.1build1) ...
+Selecting previously unselected package libobjc4:amd64.
+Preparing to unpack .../06-libobjc4_12.3.0-1ubuntu1~22.04.2_amd64.deb ...
+Unpacking libobjc4:amd64 (12.3.0-1ubuntu1~22.04.2) ...
+Selecting previously unselected package libobjc-11-dev:amd64.
+Preparing to unpack .../07-libobjc-11-dev_11.4.0-1ubuntu1~22.04.2_amd64.deb ...
+Unpacking libobjc-11-dev:amd64 (11.4.0-1ubuntu1~22.04.2) ...
+Selecting previously unselected package libc6-i386.
+Preparing to unpack .../08-libc6-i386_2.35-0ubuntu3.11_amd64.deb ...
+Unpacking libc6-i386 (2.35-0ubuntu3.11) ...
+Selecting previously unselected package lib32gcc-s1.
+Preparing to unpack .../09-lib32gcc-s1_12.3.0-1ubuntu1~22.04.2_amd64.deb ...
+Unpacking lib32gcc-s1 (12.3.0-1ubuntu1~22.04.2) ...
+Selecting previously unselected package lib32stdc++6.
+Preparing to unpack .../10-lib32stdc++6_12.3.0-1ubuntu1~22.04.2_amd64.deb ...
+Unpacking lib32stdc++6 (12.3.0-1ubuntu1~22.04.2) ...
+Selecting previously unselected package libclang-common-13-dev.
+Preparing to unpack .../11-libclang-common-13-dev_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking libclang-common-13-dev (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package llvm-13-linker-tools.
+Preparing to unpack .../12-llvm-13-linker-tools_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking llvm-13-linker-tools (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package libclang1-13.
+Preparing to unpack .../13-libclang1-13_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking libclang1-13 (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package clang-13.
+Preparing to unpack .../14-clang-13_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking clang-13 (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package libabsl20210324:amd64.
+Preparing to unpack .../15-libabsl20210324_0~20210324.2-2ubuntu0.2_amd64.deb ...
+Unpacking libabsl20210324:amd64 (0~20210324.2-2ubuntu0.2) ...
+Selecting previously unselected package libc-ares2:amd64.
+Preparing to unpack .../16-libc-ares2_1.18.1-1ubuntu0.22.04.3_amd64.deb ...
+Unpacking libc-ares2:amd64 (1.18.1-1ubuntu0.22.04.3) ...
+Selecting previously unselected package libgrpc10:amd64.
+Preparing to unpack .../17-libgrpc10_1.30.2-3build6_amd64.deb ...
+Unpacking libgrpc10:amd64 (1.30.2-3build6) ...
+Selecting previously unselected package libprotobuf23:amd64.
+Preparing to unpack .../18-libprotobuf23_3.12.4-1ubuntu7.22.04.4_amd64.deb ...
+Unpacking libprotobuf23:amd64 (3.12.4-1ubuntu7.22.04.4) ...
+Selecting previously unselected package libgrpc++1:amd64.
+Preparing to unpack .../19-libgrpc++1_1.30.2-3build6_amd64.deb ...
+Unpacking libgrpc++1:amd64 (1.30.2-3build6) ...
+Selecting previously unselected package clangd-13.
+Preparing to unpack .../20-clangd-13_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking clangd-13 (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package icu-devtools.
+Preparing to unpack .../21-icu-devtools_70.1-2_amd64.deb ...
+Unpacking icu-devtools (70.1-2) ...
+Selecting previously unselected package libicu-dev:amd64.
+Preparing to unpack .../22-libicu-dev_70.1-2_amd64.deb ...
+Unpacking libicu-dev:amd64 (70.1-2) ...
+Selecting previously unselected package libpython3.10:amd64.
+Preparing to unpack .../23-libpython3.10_3.10.12-1~22.04.13_amd64.deb ...
+Unpacking libpython3.10:amd64 (3.10.12-1~22.04.13) ...
+Selecting previously unselected package liblldb-13.
+Preparing to unpack .../24-liblldb-13_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking liblldb-13 (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package libncurses-dev:amd64.
+Preparing to unpack .../25-libncurses-dev_6.3-2ubuntu0.1_amd64.deb ...
+Unpacking libncurses-dev:amd64 (6.3-2ubuntu0.1) ...
+Selecting previously unselected package libtinfo-dev:amd64.
+Preparing to unpack .../26-libtinfo-dev_6.3-2ubuntu0.1_amd64.deb ...
+Unpacking libtinfo-dev:amd64 (6.3-2ubuntu0.1) ...
+Selecting previously unselected package libxml2-dev:amd64.
+Preparing to unpack .../27-libxml2-dev_2.9.13+dfsg-1ubuntu0.10_amd64.deb ...
+Unpacking libxml2-dev:amd64 (2.9.13+dfsg-1ubuntu0.10) ...
+Selecting previously unselected package lld-13.
+Preparing to unpack .../28-lld-13_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking lld-13 (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package libffi-dev:amd64.
+Preparing to unpack .../29-libffi-dev_3.4.2-4_amd64.deb ...
+Unpacking libffi-dev:amd64 (3.4.2-4) ...
+Selecting previously unselected package llvm-13-runtime.
+Preparing to unpack .../30-llvm-13-runtime_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking llvm-13-runtime (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package libpfm4:amd64.
+Preparing to unpack .../31-libpfm4_4.11.1+git32-gd0b85fb-1ubuntu0.1_amd64.deb ...
+Unpacking libpfm4:amd64 (4.11.1+git32-gd0b85fb-1ubuntu0.1) ...
+Selecting previously unselected package llvm-13.
+Preparing to unpack .../32-llvm-13_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking llvm-13 (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package python3-pygments.
+Preparing to unpack .../33-python3-pygments_2.11.2+dfsg-2ubuntu0.1_all.deb ...
+Unpacking python3-pygments (2.11.2+dfsg-2ubuntu0.1) ...
+Selecting previously unselected package llvm-13-tools.
+Preparing to unpack .../34-llvm-13-tools_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking llvm-13-tools (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package libz3-4:amd64.
+Preparing to unpack .../35-libz3-4_4.8.12-1_amd64.deb ...
+Unpacking libz3-4:amd64 (4.8.12-1) ...
+Selecting previously unselected package libz3-dev:amd64.
+Preparing to unpack .../36-libz3-dev_4.8.12-1_amd64.deb ...
+Unpacking libz3-dev:amd64 (4.8.12-1) ...
+Selecting previously unselected package llvm-13-dev.
+Preparing to unpack .../37-llvm-13-dev_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking llvm-13-dev (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package python3-lldb-13.
+Preparing to unpack .../38-python3-lldb-13_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking python3-lldb-13 (1:13.0.1-2ubuntu2.2) ...
+Selecting previously unselected package lldb-13.
+Preparing to unpack .../39-lldb-13_1%3a13.0.1-2ubuntu2.2_amd64.deb ...
+Unpacking lldb-13 (1:13.0.1-2ubuntu2.2) ...
+Setting up libpipeline1:amd64 (1.5.5-1) ...
+Setting up libpython3.10:amd64 (3.10.12-1~22.04.13) ...
+Setting up python3-yaml (5.4.1-1ubuntu1) ...
+Setting up libprotobuf23:amd64 (3.12.4-1ubuntu7.22.04.4) ...
+Setting up libc-ares2:amd64 (1.18.1-1ubuntu0.22.04.3) ...
+Setting up libffi-dev:amd64 (3.4.2-4) ...
+Setting up python3-pygments (2.11.2+dfsg-2ubuntu0.1) ...
+Setting up libz3-4:amd64 (4.8.12-1) ...
+Setting up libpfm4:amd64 (4.11.1+git32-gd0b85fb-1ubuntu0.1) ...
+Setting up binfmt-support (2.2.1-2) ...
+invoke-rc.d: could not determine current runlevel
+invoke-rc.d: policy-rc.d denied execution of restart.
+Created symlink /etc/systemd/system/multi-user.target.wants/binfmt-support.service → /lib/systemd/system/binfmt-support.service.
+Setting up icu-devtools (70.1-2) ...
+Setting up libllvm13:amd64 (1:13.0.1-2ubuntu2.2) ...
+Setting up libabsl20210324:amd64 (0~20210324.2-2ubuntu0.2) ...
+Setting up libgc1:amd64 (1:8.0.6-1.1build1) ...
+Setting up llvm-13-runtime (1:13.0.1-2ubuntu2.2) ...
+Setting up libc6-i386 (2.35-0ubuntu3.11) ...
+Setting up libc-dev-bin (2.35-0ubuntu3.11) ...
+Setting up libz3-dev:amd64 (4.8.12-1) ...
+Setting up libobjc4:amd64 (12.3.0-1ubuntu1~22.04.2) ...
+Setting up llvm-13-linker-tools (1:13.0.1-2ubuntu2.2) ...
+Setting up llvm-13-tools (1:13.0.1-2ubuntu2.2) ...
+Setting up libclang1-13 (1:13.0.1-2ubuntu2.2) ...
+Setting up lld-13 (1:13.0.1-2ubuntu2.2) ...
+Setting up libgrpc10:amd64 (1.30.2-3build6) ...
+Setting up lib32gcc-s1 (12.3.0-1ubuntu1~22.04.2) ...
+Setting up lib32stdc++6 (12.3.0-1ubuntu1~22.04.2) ...
+Setting up libclang-cpp13 (1:13.0.1-2ubuntu2.2) ...
+Setting up libc6-dev:amd64 (2.35-0ubuntu3.11) ...
+Setting up liblldb-13 (1:13.0.1-2ubuntu2.2) ...
+Setting up libgrpc++1:amd64 (1.30.2-3build6) ...
+Setting up libicu-dev:amd64 (70.1-2) ...
+Setting up libclang-common-13-dev (1:13.0.1-2ubuntu2.2) ...
+Setting up libncurses-dev:amd64 (6.3-2ubuntu0.1) ...
+Setting up llvm-13 (1:13.0.1-2ubuntu2.2) ...
+Setting up python3-lldb-13 (1:13.0.1-2ubuntu2.2) ...
+Setting up libobjc-11-dev:amd64 (11.4.0-1ubuntu1~22.04.2) ...
+Setting up libxml2-dev:amd64 (2.9.13+dfsg-1ubuntu0.10) ...
+Setting up clangd-13 (1:13.0.1-2ubuntu2.2) ...
+Setting up libtinfo-dev:amd64 (6.3-2ubuntu0.1) ...
+Setting up clang-13 (1:13.0.1-2ubuntu2.2) ...
+Setting up llvm-13-dev (1:13.0.1-2ubuntu2.2) ...
+Setting up lldb-13 (1:13.0.1-2ubuntu2.2) ...
+Processing triggers for libc-bin (2.35-0ubuntu3.10) ...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+clang-13 is already the newest version (1:13.0.1-2ubuntu2.2).
+0 upgraded, 0 newly installed, 0 to remove and 17 not upgraded.
+update-alternatives: using /usr/lib/llvm-13 to provide /usr/lib/llvm (llvm) in auto mode
+update-alternatives: using /usr/bin/clang-13 to provide /usr/bin/clang (clang) in auto mode
+ ---> Removed intermediate container 4fd575f1e275
+ ---> 0cbbfd305b86
+Step 36/61 : USER magma:magma
+ ---> Running in 9cd5cdfa05f3
+ ---> Removed intermediate container 9cd5cdfa05f3
+ ---> 560346b65ac2
+Step 37/61 : ARG CACHE_BUST=0
+ ---> Running in ac58037c7084
+ ---> Removed intermediate container ac58037c7084
+ ---> b2c9ef438ae4
+Step 38/61 : RUN echo "Rebuilding AFL++ due to CACHE_BUST=${CACHE_BUST}" &&     ${FUZZER}/fetch.sh &&     ${FUZZER}/build.sh
+ ---> Running in 82a3d59d5223
+Rebuilding AFL++ due to CACHE_BUST=0
+[*] Compiling AFL++ for OS Linux on ARCH x86_64
+[!] Warning: no ZLIB detected
+[*] Checking for the default compiler cc...
+[*] Testing the PATH environment variable...
+[*] Checking for the ability to compile x86 code...
+[+] shmat seems to be working.
+[-] You seem to need to install the package python3-dev or python-dev (and perhaps python[3]-apt), but it is optional so we continue
+[+] Everything seems to be working, ready to compile. (Ubuntu clang version 13.0.1-2ubuntu2.2)
+clang -O2   -g -Wno-pointer-sign -Wno-variadic-macros -Wall -Wextra -Wno-pointer-arith -fPIC -I include/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DDOC_PATH=\"/usr/local/share/doc/afl\" -flto=full  -c src/afl-common.c -o src/afl-common.o
+clang -O2   -g -Wno-pointer-sign -Wno-variadic-macros -Wall -Wextra -Wno-pointer-arith -fPIC -I include/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DDOC_PATH=\"/usr/local/share/doc/afl\" -flto=full  -c src/afl-sharedmem.c -o src/afl-sharedmem.o
+clang -O2   -g -Wno-pointer-sign -Wno-variadic-macros -Wall -Wextra -Wno-pointer-arith -fPIC -I include/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DDOC_PATH=\"/usr/local/share/doc/afl\" -flto=full  -c src/afl-forkserver.c -o src/afl-forkserver.o
+clang -O2   -g -Wno-pointer-sign -Wno-variadic-macros -Wall -Wextra -Wno-pointer-arith -fPIC -I include/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DDOC_PATH=\"/usr/local/share/doc/afl\"   -Iinclude -c src/afl-performance.c -o src/afl-performance.o
+clang -O2   -g -Wno-pointer-sign -Wno-variadic-macros -Wall -Wextra -Wno-pointer-arith -fPIC -I include/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DDOC_PATH=\"/usr/local/share/doc/afl\"  -flto=full  src/afl-fuzz-bitmap.c src/afl-fuzz-cmplog.c src/afl-fuzz-extras.c src/afl-fuzz-init.c src/afl-fuzz-mutators.c src/afl-fuzz-one.c src/afl-fuzz-python.c src/afl-fuzz-queue.c src/afl-fuzz-redqueen.c src/afl-fuzz-run.c src/afl-fuzz-sanfuzz.c src/afl-fuzz-skipdet.c src/afl-fuzz-state.c src/afl-fuzz-stats.c src/afl-fuzz-statsd.c src/afl-fuzz.c src/afl-common.o src/afl-sharedmem.o src/afl-forkserver.o src/afl-performance.o -o afl-fuzz  -ldl -lrt -lm -lm
+clang -O2   -g -Wno-pointer-sign -Wno-variadic-macros -Wall -Wextra -Wno-pointer-arith -fPIC -I include/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DDOC_PATH=\"/usr/local/share/doc/afl\"  -flto=full  src/afl-showmap.c src/afl-fuzz-mutators.c src/afl-fuzz-python.c src/afl-common.o src/afl-sharedmem.o src/afl-forkserver.o src/afl-performance.o -o afl-showmap  -ldl -lrt -lm
+clang -O2   -g -Wno-pointer-sign -Wno-variadic-macros -Wall -Wextra -Wno-pointer-arith -fPIC -I include/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DDOC_PATH=\"/usr/local/share/doc/afl\"  -flto=full  src/afl-tmin.c src/afl-common.o src/afl-sharedmem.o src/afl-forkserver.o src/afl-performance.o -o afl-tmin -ldl -lrt -lm
+clang -O2   -g -Wno-pointer-sign -Wno-variadic-macros -Wall -Wextra -Wno-pointer-arith -fPIC -I include/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DDOC_PATH=\"/usr/local/share/doc/afl\"  -flto=full  src/afl-gotcpu.c src/afl-common.o -o afl-gotcpu -ldl -lrt -lm
+clang -O2   -g -Wno-pointer-sign -Wno-variadic-macros -Wall -Wextra -Wno-pointer-arith -fPIC -I include/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DDOC_PATH=\"/usr/local/share/doc/afl\"  -flto=full  src/afl-analyze.c src/afl-common.o src/afl-sharedmem.o src/afl-performance.o src/afl-forkserver.o -o afl-analyze -ldl -lrt -lm
+make -j -f GNUmakefile.llvm
+[91mmake[1]: warning: -j0 forced in submake: resetting jobserver mode.
+[0mmake[1]: Entering directory '/magma/fuzzers/afl_uaf_detect/repo'
+[+] llvm_mode detected llvm 10+, enabling neverZero implementation and c++14
+[+] llvm_mode detected llvm 12+, enabling afl-lto LTO implementation
+[+] shmat seems to be working.
+[*] Checking for working 'llvm-config'...
+[*] Checking for working '/usr/lib/llvm-13/bin/clang'...
+[*] Checking for matching versions of '/usr/lib/llvm-13/bin/clang' and 'llvm-config-13'
+[*] We have llvm-config version 13.0.1 with a clang version 13.0.1, good.
+[*] Checking for './afl-showmap'...
+[+] All set and ready to build.
+/usr/lib/llvm-13/bin/clang -O3 -funroll-loops -fPIC -Wall -g -Wno-cast-qual -Wno-variadic-macros -Wno-pointer-sign -I ./include/ -I ./instrumentation/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DLLVM_BINDIR=\"/usr/lib/llvm-13/bin\" -DVERSION=\"++4.32a\" -DLLVM_LIBDIR=\"/usr/lib/llvm-13/lib\" -DLLVM_VERSION=\"13.0.1\" -DAFL_CLANG_FLTO=\"-flto=full\" -DAFL_REAL_LD=\"/usr/lib/llvm-13/bin/ld.lld\" -DAFL_CLANG_LDPATH=\"1\" -DAFL_CLANG_FUSELD=\"1\" -DCLANG_BIN=\"/usr/lib/llvm-13/bin/clang\" -DCLANGPP_BIN=\"/usr/lib/llvm-13/bin/clang++\" -DUSE_BINDIR=1 -Wno-unused-function -Wno-deprecated  -c src/afl-common.c -o instrumentation/afl-common.o 
+/usr/lib/llvm-13/bin/clang -I/usr/lib/llvm-13/include -I./../include -O3 -funroll-loops -fPIC -Wall -g -Wno-cast-qual -Wno-variadic-macros -Wno-pointer-sign -I ./include/ -I ./instrumentation/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DLLVM_BINDIR=\"/usr/lib/llvm-13/bin\" -DVERSION=\"++4.32a\" -DLLVM_LIBDIR=\"/usr/lib/llvm-13/lib\" -DLLVM_VERSION=\"13.0.1\" -DAFL_CLANG_FLTO=\"-flto=full\" -DAFL_REAL_LD=\"/usr/lib/llvm-13/bin/ld.lld\" -DAFL_CLANG_LDPATH=\"1\" -DAFL_CLANG_FUSELD=\"1\" -DCLANG_BIN=\"/usr/lib/llvm-13/bin/clang\" -DCLANGPP_BIN=\"/usr/lib/llvm-13/bin/clang++\" -DUSE_BINDIR=1 -Wno-unused-function -Wno-deprecated  src/afl-cc.c instrumentation/afl-common.o -o afl-cc -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -DCFLAGS_OPT=\"\" -lm
+/usr/lib/llvm-13/bin/clang -I/usr/lib/llvm-13/include -I./../include -Wall -g -Wno-cast-qual -Wno-variadic-macros -Wno-pointer-sign -I ./include/ -I ./instrumentation/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DLLVM_BINDIR=\"/usr/lib/llvm-13/bin\" -DVERSION=\"++4.32a\" -DLLVM_LIBDIR=\"/usr/lib/llvm-13/lib\" -DLLVM_VERSION=\"13.0.1\" -DAFL_CLANG_FLTO=\"-flto=full\" -DAFL_REAL_LD=\"/usr/lib/llvm-13/bin/ld.lld\" -DAFL_CLANG_LDPATH=\"1\" -DAFL_CLANG_FUSELD=\"1\" -DCLANG_BIN=\"/usr/lib/llvm-13/bin/clang\" -DCLANGPP_BIN=\"/usr/lib/llvm-13/bin/clang++\" -DUSE_BINDIR=1 -Wno-unused-function -Wno-deprecated  -O3 -Wno-unused-result -fPIC -c instrumentation/afl-compiler-rt.o.c -o afl-compiler-rt.o
+[*] Building 32-bit variant of the runtime (-m32)... failed (that's fine)
+[*] Building 64-bit variant of the runtime (-m64)... success!
+/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -Wdeprecated -fno-rtti -fPIC -std=c++14 -shared instrumentation/afl-llvm-uaf-pass.so.cc -o afl-llvm-uaf-pass.so $(llvm-config-13 --ldflags) 
+[91mIn file included from instrumentation/afl-llvm-uaf-pass.so.cc:27:
+In file included from /usr/lib/llvm-13/include/llvm/Passes/PassBuilder.h:19:
+In file included from /usr/lib/llvm-13/include/llvm/Analysis/CGSCCPassManager.h:98:
+In file included from /usr/lib/llvm-13/include/llvm/Analysis/LazyCallGraph.h:48:
+In file included from /usr/lib/llvm-13/include/llvm/Analysis/TargetLibraryInfo.h:15:
+In file included from /usr/lib/llvm-13/include/llvm/IR/Function.h:25:
+In file included from /usr/lib/llvm-13/include/llvm/IR/Argument.h:18:
+/usr/lib/llvm-13/include/llvm/IR/Attributes.h:284:3: warning: definition of implicit copy assignment operator for 'AttributeSet' is deprecated because it has a user-declared destructor [-Wdeprecated-copy-with-dtor]
+  ~AttributeSet() = default;
+  ^
+/usr/lib/llvm-13/include/llvm/IR/GlobalVariable.h:189:11: note: in implicit copy assignment operator for 'llvm::AttributeSet' first required here
+    Attrs = Attrs.addAttribute(getContext(), Kind);
+          ^
+[0m[91minstrumentation/afl-llvm-uaf-pass.so.cc:98:14: warning: unused variable 'fopenF' [-Wunused-variable]
+        auto fopenF   = getOrDeclareFopen(M);
+             ^
+instrumentation/afl-llvm-uaf-pass.so.cc:125:22: warning: unused variable 'fh' [-Wunused-variable]
+        llvm::Value *fh;
+                     ^
+instrumentation/afl-llvm-uaf-pass.so.cc:101:14: warning: unused variable 'fcloseF' [-Wunused-variable]
+        auto fcloseF  = getOrDeclareFclose(M);
+             ^
+instrumentation/afl-llvm-uaf-pass.so.cc:100:14: warning: unused variable 'fflushF' [-Wunused-variable]
+        auto fflushF  = getOrDeclareFflush(M);
+             ^
+instrumentation/afl-llvm-uaf-pass.so.cc:99:14: warning: unused variable 'fprintfF' [-Wunused-variable]
+        auto fprintfF = getOrDeclareFprintf(M);
+             ^
+instrumentation/afl-llvm-uaf-pass.so.cc:177:14: warning: unused variable 'insertInjectionCounterCompareAndIncrement' [-Wunused-variable]
+        auto insertInjectionCounterCompareAndIncrement = [&](Value *&injectionCntPtr, llvm::BasicBlock *&blockAlongPath_ptr, int injection_counter, int uafCounterIndex, Value* injection_point_after_free, Value* freeFoundBitSet){
+             ^
+instrumentation/afl-llvm-uaf-pass.so.cc:92:20: warning: unused variable 'i8Array10Ty' [-Wunused-variable]
+[0m[91m        ArrayType *i8Array10Ty = ArrayType::get(i8Ty, 10); // array of 10 i8
+                   ^
+[0m[91m8 warnings generated.
+[0m/usr/lib/llvm-13/bin/clang++ -O3 -funroll-loops -fPIC -Wall -g -Wno-cast-qual -Wno-variadic-macros -Wno-pointer-sign -I ./include/ -I ./instrumentation/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DLLVM_BINDIR=\"/usr/lib/llvm-13/bin\" -DVERSION=\"++4.32a\" -DLLVM_LIBDIR=\"/usr/lib/llvm-13/lib\" -DLLVM_VERSION=\"13.0.1\" -DAFL_CLANG_FLTO=\"-flto=full\" -DAFL_REAL_LD=\"/usr/lib/llvm-13/bin/ld.lld\" -DAFL_CLANG_LDPATH=\"1\" -DAFL_CLANG_FUSELD=\"1\" -DCLANG_BIN=\"/usr/lib/llvm-13/bin/clang\" -DCLANGPP_BIN=\"/usr/lib/llvm-13/bin/clang++\" -DUSE_BINDIR=1 -Wno-unused-function -Wno-deprecated  $(llvm-config-13 --cxxflags) -fno-rtti -fPIC -std=c++14 -c instrumentation/afl-llvm-common.cc -o instrumentation/afl-llvm-common.o
+/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -Wdeprecated -fno-rtti -fPIC -std=c++14 -shared instrumentation/afl-llvm-pass.so.cc -o afl-llvm-pass.so $(llvm-config-13 --ldflags)  instrumentation/afl-llvm-common.o
+[91mIn file included from instrumentation/afl-llvm-pass.so.cc:43:
+In file included from /usr/lib/llvm-13/include/llvm/Passes/PassBuilder.h:19:
+In file included from /usr/lib/llvm-13/include/llvm/Analysis/CGSCCPassManager.h:98:
+In file included from /usr/lib/llvm-13/include/llvm/Analysis/LazyCallGraph.h:48:
+In file included from /usr/lib/llvm-13/include/llvm/Analysis/TargetLibraryInfo.h:15:
+In file included from /usr/lib/llvm-13/include/llvm/IR/Function.h:25:
+In file included from /usr/lib/llvm-13/include/llvm/IR/Argument.h:18:
+/usr/lib/llvm-13/include/llvm/IR/Attributes.h:284:3: warning: definition of implicit copy assignment operator for 'AttributeSet' is deprecated because it has a user-declared destructor [-Wdeprecated-copy-with-dtor]
+  ~AttributeSet() = default;
+  ^
+/usr/lib/llvm-13/include/llvm/IR/GlobalVariable.h:189:11: note: in implicit copy assignment operator for 'llvm::AttributeSet' first required here
+    Attrs = Attrs.addAttribute(getContext(), Kind);
+          ^
+[0m[91minstrumentation/afl-llvm-pass.so.cc:554:28: warning: 'CreateLoad' is deprecated: Use the version that explicitly specifies the loaded type instead [-Wdeprecated-declarations]
+          PrevCaller = IRB.CreateLoad(
+                           ^
+/usr/lib/llvm-13/include/llvm/IR/IRBuilder.h:1678:3: note: 'CreateLoad' has been explicitly marked deprecated here
+  LLVM_ATTRIBUTE_DEPRECATED(LoadInst *CreateLoad(Value *Ptr,
+  ^
+/usr/lib/llvm-13/include/llvm/Support/Compiler.h:320:52: [0m[91mnote: expanded from macro 'LLVM_ATTRIBUTE_DEPRECATED'
+#define LLVM_ATTRIBUTE_DEPRECATED(decl, message) [[deprecated(message)]] decl
+                                                   ^
+[0m[91minstrumentation/afl-llvm-pass.so.cc:571:39: warning: 'CreateLoad' is deprecated: Use the version that explicitly specifies the loaded type instead [-Wdeprecated-declarations]
+          LoadInst *PrevCtxLoad = IRB.CreateLoad(
+[0m[91m                                      ^
+/usr/lib/llvm-13/include/llvm/IR/IRBuilder.h:1678:3: note: 'CreateLoad' has been explicitly marked deprecated here
+  LLVM_ATTRIBUTE_DEPRECATED(LoadInst *CreateLoad(Value *Ptr,
+  ^
+/usr/lib/llvm-13/include/llvm/Support/Compiler.h:320:52: note: expanded from macro 'LLVM_ATTRIBUTE_DEPRECATED'
+#define LLVM_ATTRIBUTE_DEPRECATED(decl, message) [[deprecated(message)]] decl
+                                                   ^
+[0m[91minstrumentation/afl-llvm-pass.so.cc:732:23: warning: 'CreateLoad' is deprecated: Use the version that explicitly specifies the loaded type instead [-Wdeprecated-declarations]
+        PrevLoc = IRB.CreateLoad(
+                      ^
+/usr/lib/llvm-13/include/llvm/IR/IRBuilder.h:1678:3: note: 'CreateLoad' has been explicitly marked deprecated here
+  LLVM_ATTRIBUTE_DEPRECATED(LoadInst *CreateLoad(Value *Ptr,
+  ^
+/usr/lib/llvm-13/include/llvm/Support/Compiler.h:320:52: note: expanded from macro 'LLVM_ATTRIBUTE_DEPRECATED'
+[0m[91m#define LLVM_ATTRIBUTE_DEPRECATED(decl, message) [[deprecated(message)]] decl
+                                                   ^
+instrumentation/afl-llvm-pass.so.cc:740:23: warning: 'CreateLoad' is deprecated: Use the version that explicitly specifies the loaded type instead [-Wdeprecated-declarations]
+        PrevLoc = IRB.CreateLoad(
+                      ^
+/usr/lib/llvm-13/include/llvm/IR/IRBuilder.h:1678:3: note: 'CreateLoad' has been explicitly marked deprecated here
+  LLVM_ATTRIBUTE_DEPRECATED(LoadInst *CreateLoad(Value *Ptr,
+  ^
+/usr/lib/llvm-13/include/llvm/Support/Compiler.h:320:52: note: expanded from macro 'LLVM_ATTRIBUTE_DEPRECATED'
+#define LLVM_ATTRIBUTE_DEPRECATED(decl, message) [[deprecated(message)]] decl
+                                                   ^
+[0m[91minstrumentation/afl-llvm-pass.so.cc:771:30: warning: 'CreateLoad' is deprecated: Use the version that explicitly specifies the loaded type instead [-Wdeprecated-declarations]
+      LoadInst *MapPtr = IRB.CreateLoad(
+                             ^
+/usr/lib/llvm-13/include/llvm/IR/IRBuilder.h:1678:3: note: 'CreateLoad' has been explicitly marked deprecated here
+  LLVM_ATTRIBUTE_DEPRECATED(LoadInst *CreateLoad(Value *Ptr,
+  ^
+/usr/lib/llvm-13/include/llvm/Support/Compiler.h:320:52: note: expanded from macro 'LLVM_ATTRIBUTE_DEPRECATED'
+#define LLVM_ATTRIBUTE_DEPRECATED(decl, message) [[deprecated(message)]] decl
+                                                   ^
+[0m[91minstrumentation/afl-llvm-pass.so.cc:788:25: warning: 'CreateGEP' is deprecated: Use the version with explicit element type instead [-Wdeprecated-declarations]
+        MapPtrIdx = IRB.CreateGEP(
+                        ^
+/usr/lib/llvm-13/include/llvm/IR/IRBuilder.h:1787:3: note: 'CreateGEP' has been explicitly marked deprecated here
+  LLVM_ATTRIBUTE_DEPRECATED(
+  ^
+/usr/lib/llvm-13/include/llvm/Support/Compiler.h:320:52: note: expanded from macro 'LLVM_ATTRIBUTE_DEPRECATED'
+#define LLVM_ATTRIBUTE_DEPRECATED(decl, message) [[deprecated(message)]] decl
+                                                   ^
+[0m[91minstrumentation/afl-llvm-pass.so.cc:811:33: warning: 'CreateLoad' is deprecated: Use the version that explicitly specifies the loaded type instead [-Wdeprecated-declarations]
+        LoadInst *Counter = IRB.CreateLoad(
+                                ^
+/usr/lib/llvm-13/include/llvm/IR/IRBuilder.h:1678:3: note: 'CreateLoad' has been explicitly marked deprecated here
+[0m[91m  LLVM_ATTRIBUTE_DEPRECATED(LoadInst *CreateLoad(Value *Ptr,
+  ^
+/usr/lib/llvm-13/include/llvm/Support/Compiler.h:320:52: note: expanded from macro 'LLVM_ATTRIBUTE_DEPRECATED'
+#define LLVM_ATTRIBUTE_DEPRECATED(decl, message) [[deprecated(message)]] decl
+                                                   ^
+[0m[91m8 warnings generated.
+[0m/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -fno-rtti -fPIC -std=c++14 -shared instrumentation/SanitizerCoveragePCGUARD.so.cc -o SanitizerCoveragePCGUARD.so $(llvm-config-13 --ldflags)  -Wno-deprecated-copy-dtor -Wdeprecated instrumentation/afl-llvm-common.o
+[91mIn file included from instrumentation/SanitizerCoveragePCGUARD.so.cc:13:
+In file included from /usr/lib/llvm-13/include/llvm/Transforms/Instrumentation/SanitizerCoverage.h:19:
+In file included from /usr/lib/llvm-13/include/llvm/IR/Module.h:23:
+/usr/lib/llvm-13/include/llvm/IR/Attributes.h:284:3: warning: definition of implicit copy assignment operator for 'AttributeSet' is deprecated because it has a user-declared destructor [-Wdeprecated-copy-with-dtor]
+  ~AttributeSet() = default;
+  ^
+/usr/lib/llvm-13/include/llvm/IR/GlobalVariable.h:189:11: note: in implicit copy assignment operator for 'llvm::AttributeSet' first required here
+    Attrs = Attrs.addAttribute(getContext(), Kind);
+          ^
+[0m[91m1 warning generated.
+[0m/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -shared instrumentation/split-compares-pass.so.cc -o split-compares-pass.so $(llvm-config-13 --ldflags)  instrumentation/afl-llvm-common.o
+/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -shared instrumentation/split-switches-pass.so.cc -o split-switches-pass.so $(llvm-config-13 --ldflags)  instrumentation/afl-llvm-common.o
+/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -shared instrumentation/cmplog-routines-pass.cc -o cmplog-routines-pass.so $(llvm-config-13 --ldflags)  instrumentation/afl-llvm-common.o
+/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -shared instrumentation/cmplog-instructions-pass.cc -o cmplog-instructions-pass.so $(llvm-config-13 --ldflags)  instrumentation/afl-llvm-common.o
+/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -shared instrumentation/cmplog-switches-pass.cc -o cmplog-switches-pass.so $(llvm-config-13 --ldflags)  instrumentation/afl-llvm-common.o
+/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -shared instrumentation/afl-llvm-dict2file.so.cc -o afl-llvm-dict2file.so $(llvm-config-13 --ldflags)  instrumentation/afl-llvm-common.o
+/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -shared instrumentation/compare-transform-pass.so.cc -o compare-transform-pass.so $(llvm-config-13 --ldflags)  instrumentation/afl-llvm-common.o
+/usr/lib/llvm-13/bin/clang -O3 -funroll-loops -fPIC -Wall -g -Wno-cast-qual -Wno-variadic-macros -Wno-pointer-sign -I ./include/ -I ./instrumentation/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DLLVM_BINDIR=\"/usr/lib/llvm-13/bin\" -DVERSION=\"++4.32a\" -DLLVM_LIBDIR=\"/usr/lib/llvm-13/lib\" -DLLVM_VERSION=\"13.0.1\" -DAFL_CLANG_FLTO=\"-flto=full\" -DAFL_REAL_LD=\"/usr/lib/llvm-13/bin/ld.lld\" -DAFL_CLANG_LDPATH=\"1\" -DAFL_CLANG_FUSELD=\"1\" -DCLANG_BIN=\"/usr/lib/llvm-13/bin/clang\" -DCLANGPP_BIN=\"/usr/lib/llvm-13/bin/clang++\" -DUSE_BINDIR=1 -Wno-unused-function -Wno-deprecated  src/afl-ld-lto.c -o afl-ld-lto
+/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -fno-rtti -fPIC -std=c++14 -shared instrumentation/afl-llvm-lto-instrumentlist.so.cc -o afl-llvm-lto-instrumentlist.so $(llvm-config-13 --ldflags)  instrumentation/afl-llvm-common.o
+/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -Wno-writable-strings -fno-rtti -fPIC -std=c++14 -shared instrumentation/SanitizerCoverageLTO.so.cc -o SanitizerCoverageLTO.so $(llvm-config-13 --ldflags)  instrumentation/afl-llvm-common.o
+/usr/lib/llvm-13/bin/clang -Wall -g -Wno-cast-qual -Wno-variadic-macros -Wno-pointer-sign -I ./include/ -I ./instrumentation/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DLLVM_BINDIR=\"/usr/lib/llvm-13/bin\" -DVERSION=\"++4.32a\" -DLLVM_LIBDIR=\"/usr/lib/llvm-13/lib\" -DLLVM_VERSION=\"13.0.1\" -DAFL_CLANG_FLTO=\"-flto=full\" -DAFL_REAL_LD=\"/usr/lib/llvm-13/bin/ld.lld\" -DAFL_CLANG_LDPATH=\"1\" -DAFL_CLANG_FUSELD=\"1\" -DCLANG_BIN=\"/usr/lib/llvm-13/bin/clang\" -DCLANGPP_BIN=\"/usr/lib/llvm-13/bin/clang++\" -DUSE_BINDIR=1 -Wno-unused-function -Wno-deprecated  -Wno-unused-result -O0 -flto=full -fPIC -c instrumentation/afl-llvm-rt-lto.o.c -o ./afl-llvm-rt-lto.o
+/usr/lib/llvm-13/bin/clang++ $(llvm-config-13 --cxxflags) -fno-rtti -fno-exceptions -fPIC -O3 -funroll-loops -fPIC -Wall -g -I ./include/ -DVERSION=\"++4.32a\" -Wno-variadic-macros -Wno-deprecated-copy-with-dtor -DLLVM_MINOR=0 -DLLVM_MAJOR=13  -Wno-deprecated-declarations -Wl,-znodelete -shared instrumentation/injection-pass.cc -o injection-pass.so $(llvm-config-13 --ldflags)  instrumentation/afl-llvm-common.o
+[*] Testing the CC wrapper and instrumentation output...
+unset AFL_USE_ASAN AFL_USE_MSAN AFL_INST_RATIO AFL_LLVM_ALLOWLIST AFL_LLVM_DENYLIST; ASAN_OPTIONS=detect_leaks=0 AFL_QUIET=1 AFL_PATH=. AFL_LLVM_LAF_ALL=1 ./afl-cc -O3 -funroll-loops -fPIC -Wall -g -Wno-cast-qual -Wno-variadic-macros -Wno-pointer-sign -I ./include/ -I ./instrumentation/ -DAFL_PATH=\"/usr/local/lib/afl\" -DBIN_PATH=\"/usr/local/bin\" -DLLVM_BINDIR=\"/usr/lib/llvm-13/bin\" -DVERSION=\"++4.32a\" -DLLVM_LIBDIR=\"/usr/lib/llvm-13/lib\" -DLLVM_VERSION=\"13.0.1\" -DAFL_CLANG_FLTO=\"-flto=full\" -DAFL_REAL_LD=\"/usr/lib/llvm-13/bin/ld.lld\" -DAFL_CLANG_LDPATH=\"1\" -DAFL_CLANG_FUSELD=\"1\" -DCLANG_BIN=\"/usr/lib/llvm-13/bin/clang\" -DCLANGPP_BIN=\"/usr/lib/llvm-13/bin/clang++\" -DUSE_BINDIR=1 -Wno-unused-function -Wno-deprecated  ./test-instr.c -o test-instr 
+[0;36mafl-cc++4.32a[0m by Michal Zalewski, Laszlo Szekeres, Marc Heuse - mode: LLVM-PCGUARD
+ './afl-cc' '-O3' '-funroll-loops' '-fPIC' '-Wall' '-g' '-Wno-cast-qual' '-Wno-variadic-macros' '-Wno-pointer-sign' '-I' './include/' '-I' './instrumentation/' '-DAFL_PATH="/usr/local/lib/afl"' '-DBIN_PATH="/usr/local/bin"' '-DLLVM_BINDIR="/usr/lib/llvm-13/bin"' '-DVERSION="++4.32a"' '-DLLVM_LIBDIR="/usr/lib/llvm-13/lib"' '-DLLVM_VERSION="13.0.1"' '-DAFL_CLANG_FLTO="-flto=full"' '-DAFL_REAL_LD="/usr/lib/llvm-13/bin/ld.lld"' '-DAFL_CLANG_LDPATH="1"' '-DAFL_CLANG_FUSELD="1"' '-DCLANG_BIN="/usr/lib/llvm-13/bin/clang"' '-DCLANGPP_BIN="/usr/lib/llvm-13/bin/clang++"' '-DUSE_BINDIR=1' '-Wno-unused-function' '-Wno-deprecated' './test-instr.c' '-o' 'test-instr'
+ '/usr/lib/llvm-13/bin/clang' '-Wno-unused-command-line-argument' '-fexperimental-new-pass-manager' '-fpass-plugin=./split-switches-pass.so' '-fexperimental-new-pass-manager' '-fpass-plugin=./compare-transform-pass.so' '-fexperimental-new-pass-manager' '-fpass-plugin=./split-compares-pass.so' '-fexperimental-new-pass-manager' '-fpass-plugin=./SanitizerCoveragePCGUARD.so' '-O3' '-funroll-loops' '-fPIC' '-Wall' '-g' '-Wno-cast-qual' '-Wno-variadic-macros' '-Wno-pointer-sign' '-I' './include/' '-I' './instrumentation/' '-DAFL_PATH="/usr/local/lib/afl"' '-DBIN_PATH="/usr/local/bin"' '-DLLVM_BINDIR="/usr/lib/llvm-13/bin"' '-DVERSION="++4.32a"' '-DLLVM_LIBDIR="/usr/lib/llvm-13/lib"' '-DLLVM_VERSION="13.0.1"' '-DAFL_CLANG_FLTO="-flto=full"' '-DAFL_REAL_LD="/usr/lib/llvm-13/bin/ld.lld"' '-DAFL_CLANG_LDPATH="1"' '-DAFL_CLANG_FUSELD="1"' '-DCLANG_BIN="/usr/lib/llvm-13/bin/clang"' '-DCLANGPP_BIN="/usr/lib/llvm-13/bin/clang++"' '-DUSE_BINDIR=1' '-Wno-unused-function' '-Wno-deprecated' './test-instr.c' '-o' 'test-instr' '-fno-builtin-strcmp' '-fno-builtin-strncmp' '-fno-builtin-strcasecmp' '-fno-builtin-strncasecmp' '-fno-builtin-memcmp' '-fno-builtin-memmem' '-fno-builtin-bcmp' '-fno-builtin-strstr' '-fno-builtin-strcasestr' '-g' '-D__AFL_COMPILER=1' '-DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION=1' '-D__AFL_COVERAGE()=int __afl_selective_coverage = 1;void __afl_coverage_discard();void __afl_coverage_skip();void __afl_coverage_on();void __afl_coverage_off();' '-D__AFL_COVERAGE_START_OFF()=int __afl_selective_coverage_start_off = 1;' '-D__AFL_COVERAGE_ON()=__afl_coverage_on()' '-D__AFL_COVERAGE_OFF()=__afl_coverage_off()' '-D__AFL_COVERAGE_DISCARD()=__afl_coverage_discard()' '-D__AFL_COVERAGE_SKIP()=__afl_coverage_skip()' '-D__AFL_HAVE_MANUAL_CONTROL=1' '-D__AFL_FUZZ_INIT()=int __afl_sharedmem_fuzzing = 1;extern __attribute__((visibility("default"))) unsigned int *__afl_fuzz_len;extern __attribute__((visibility("default"))) unsigned char *__afl_fuzz_ptr;unsigned char __afl_fuzz_alt[1048576];unsigned char *__afl_fuzz_alt_ptr = __afl_fuzz_alt;' '-D__AFL_FUZZ_TESTCASE_BUF=(__afl_fuzz_ptr ? __afl_fuzz_ptr : __afl_fuzz_alt_ptr)' '-D__AFL_FUZZ_TESTCASE_LEN=(__afl_fuzz_ptr ? *__afl_fuzz_len : (*__afl_fuzz_len = read(0, __afl_fuzz_alt_ptr, 1048576)) == 0xffffffff ? 0 : *__afl_fuzz_len)' '-D__AFL_LOOP(_A)=({ static volatile const char *_B __attribute__((used,unused));  _B = (const char*)"##SIG_AFL_PERSISTENT##"; extern __attribute__((visibility("default"))) int __afl_connected;__attribute__((visibility("default"))) int _L(unsigned int) __asm__("__afl_persistent_loop"); _L(__afl_connected ? _A : 1); })' '-D__AFL_INIT()=do { static volatile const char *_A __attribute__((used,unused));  _A = (const char*)"##SIG_AFL_DEFER_FORKSRV##"; __attribute__((visibility("default"))) void _I(void) __asm__("__afl_manual_init"); _I(); } while (0)' './afl-compiler-rt.o' '-Wl,--dynamic-list=./dynamic_list.txt' '(null)'
+[91m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-as
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-as
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./../lib/afl/afl-as
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying /usr/local/lib/afl/afl-as
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-as
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ... giving up
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./SanitizerCoveragePCGUARD.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./SanitizerCoverageLTO.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./cmplog-routines-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-gcc-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-gcc-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./../lib/afl/afl-gcc-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying /usr/local/lib/afl/afl-gcc-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-gcc-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ... giving up
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-compiler-rt.o
+[0m[0;35m[D] [1;97mDEBUG: [0mrt=./afl-compiler-rt.o
+[0m[0;35m[D] [1;97mDEBUG: [0mcd '/magma/fuzzers/afl_uaf_detect/repo';[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./split-switches-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./compare-transform-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./split-compares-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./SanitizerCoveragePCGUARD.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-compiler-rt.o
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./dynamic_list.txt
+[0m[0;35m[D] [1;97mDEBUG: [0mcd '/magma/fuzzers/afl_uaf_detect/repo';[0m[0m[91mSplit-compare-newpass by laf.intel@gmail.com, extended by heiko@hexco.de (splitting icmp to 8 bit)
+[0m[91m13 comparisons found
+[0mRunning split-switches-pass by laf.intel@gmail.com
+Running compare-transform-pass by laf.intel@gmail.com, extended by heiko@hexco.de
+Replacing 1 calls to strcmp/memcmp/strncmp/strcasecmp/strncasecmp
+[0;36mSanitizerCoveragePCGUARD++4.32a[0m
+[91mSanitizerCoveragePCGUARD: instrumenting main in ./test-instr.c
+[0m[91mSANCOV: installed pcguard_init in ctor
+[0m[1;92m[+] [0mInstrumented 67 locations with no collisions (non-hardened mode) of which are 0 handled and 0 unhandled selects.[0m
+ASAN_OPTIONS=detect_leaks=0 ./afl-showmap -m none -q -o .test-instr0 ./test-instr < /dev/null
+[91m[0;35m[D] [1;97mDEBUG: [0m[0m[0m[91mDEBUG: debug enabled
+DEBUG: AFL++ afl-compiler-rt++4.32a
+DEBUG: (1) id_str 0, __afl_area_ptr 0x40a2d0, __afl_area_initial 0x40a2d0, __afl_area_ptr_dummy 0x40a2d0, __afl_map_addr 0x0, MAP_SIZE 65536, __afl_final_loc 0, __afl_map_size 65536
+[0m[91mDEBUG: (2) id_str 0, __afl_area_ptr 0x781ccda2e000, __afl_area_initial 0x40a2d0, __afl_area_ptr_dummy 0x40a2d0, __afl_map_addr 0x0, MAP_SIZE 65536, __afl_final_loc 0, __afl_map_size 65536
+DEBUG: cmplog id_str <null>
+DEBUG: Running __sanitizer_cov_trace_pc_guard_init: 0x40a1a8-0x40a2b8 (68 edges) after_fs=0 *start=0
+DEBUG: Done __sanitizer_cov_trace_pc_guard_init: __afl_final_loc = 72
+[0m ./afl-showmap -m none -q -o .test-instr0 ./test-instr
+[1;92m[+] [0mEnabled environment variable AFL_DEBUG_CHILD with value 1[0m
+[1;94m[*] [0mSpinning up the fork server...[0m
+[1;92m[+] [0mAll right - new fork server model v1 is up.[0m
+[1;94m[*] [0mForkserver options received: (0x00000001)[0m
+[1;94m[*] [0mTarget map size: 73[0m
+echo 1 | ASAN_OPTIONS=detect_leaks=0 ./afl-showmap -m none -q -o .test-instr1 ./test-instr
+[91m[0;35m[D] [1;97mDEBUG: [0m[0m[0m[91mDEBUG: debug enabled
+DEBUG: AFL++ afl-compiler-rt++4.32a
+DEBUG: (1) id_str 2, __afl_area_ptr 0x40a2d0, __afl_area_initial 0x40a2d0, __afl_area_ptr_dummy 0x40a2d0, __afl_map_addr 0x0, MAP_SIZE 65536, __afl_final_loc 0, __afl_map_size 65536
+[0m[91mDEBUG: (2) id_str 2, __afl_area_ptr 0x7493521d0000, __afl_area_initial 0x40a2d0, __afl_area_ptr_dummy 0x40a2d0, __afl_map_addr 0x0, MAP_SIZE 65536, __afl_final_loc 0, __afl_map_size 65536
+DEBUG: cmplog id_str <null>
+DEBUG: Running __sanitizer_cov_trace_pc_guard_init: 0x40a1a8-0x40a2b8 (68 edges) after_fs=0 *start=0
+DEBUG: Done __sanitizer_cov_trace_pc_guard_init: __afl_final_loc = 72
+[0m ./afl-showmap -m none -q -o .test-instr1 ./test-instr
+[1;92m[+] [0mEnabled environment variable AFL_DEBUG_CHILD with value 1[0m
+[1;94m[*] [0mSpinning up the fork server...[0m
+[1;92m[+] [0mAll right - new fork server model v1 is up.[0m
+[1;94m[*] [0mForkserver options received: (0x00000001)[0m
+[1;94m[*] [0mTarget map size: 73[0m
+[+] All right, the instrumentation seems to be working!
+[+] All done! You can now use './afl-cc' to compile programs.
+make[1]: Leaving directory '/magma/fuzzers/afl_uaf_detect/repo'
+make -f GNUmakefile.gcc_plugin
+make[1]: Entering directory '/magma/fuzzers/afl_uaf_detect/repo'
+[+] shmat seems to be working.
+[*] Checking for working 'gcc'...
+[*] Checking for gcc plugin development header files...
+[-] Oops, can't find gcc header files. Be sure to install 'gcc-X-plugin-dev'.
+make[1]: Leaving directory '/magma/fuzzers/afl_uaf_detect/repo'
+[91mmake[1]: *** [GNUmakefile.gcc_plugin:127: test_deps] Error 1
+[0m[91mmake: [GNUmakefile:360: gcc_plugin] Error 2 (ignored)
+[0m[*] Testing the CC wrapper afl-cc and its instrumentation output...
+[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-as
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-as
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./../lib/afl/afl-as
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying /usr/local/lib/afl/afl-as
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-as
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ... giving up
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./SanitizerCoveragePCGUARD.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./SanitizerCoverageLTO.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./cmplog-routines-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-gcc-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-gcc-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./../lib/afl/afl-gcc-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying /usr/local/lib/afl/afl-gcc-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-gcc-pass.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ... giving up
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-compiler-rt.o
+[0m[0;35m[D] [1;97mDEBUG: [0mrt=./afl-compiler-rt.o
+[0m[0;35m[D] [1;97mDEBUG: [0mcd '/magma/fuzzers/afl_uaf_detect/repo';[0m[0;36mafl-cc++4.32a[0m by Michal Zalewski, Laszlo Szekeres, Marc Heuse - mode: LLVM-PCGUARD
+ './afl-cc' 'test-instr.c' '-ldl' '-lrt' '-lm' '-o' 'test-instr'
+[0;35m[D] [1;97mDEBUG: [0mTrying ./SanitizerCoveragePCGUARD.so
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./afl-compiler-rt.o
+[0m[0;35m[D] [1;97mDEBUG: [0mTrying ./dynamic_list.txt
+[0m[0;35m[D] [1;97mDEBUG: [0mcd '/magma/fuzzers/afl_uaf_detect/repo';[0m '/usr/lib/llvm-13/bin/clang' '-Wno-unused-command-line-argument' '-fexperimental-new-pass-manager' '-fpass-plugin=./SanitizerCoveragePCGUARD.so' 'test-instr.c' '-ldl' '-lrt' '-lm' '-o' 'test-instr' '-fPIC' '-g' '-O3' '-funroll-loops' '-D__AFL_COMPILER=1' '-DFUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION=1' '-D__AFL_COVERAGE()=int __afl_selective_coverage = 1;void __afl_coverage_discard();void __afl_coverage_skip();void __afl_coverage_on();void __afl_coverage_off();' '-D__AFL_COVERAGE_START_OFF()=int __afl_selective_coverage_start_off = 1;' '-D__AFL_COVERAGE_ON()=__afl_coverage_on()' '-D__AFL_COVERAGE_OFF()=__afl_coverage_off()' '-D__AFL_COVERAGE_DISCARD()=__afl_coverage_discard()' '-D__AFL_COVERAGE_SKIP()=__afl_coverage_skip()' '-D__AFL_HAVE_MANUAL_CONTROL=1' '-D__AFL_FUZZ_INIT()=int __afl_sharedmem_fuzzing = 1;extern __attribute__((visibility("default"))) unsigned int *__afl_fuzz_len;extern __attribute__((visibility("default"))) unsigned char *__afl_fuzz_ptr;unsigned char __afl_fuzz_alt[1048576];unsigned char *__afl_fuzz_alt_ptr = __afl_fuzz_alt;' '-D__AFL_FUZZ_TESTCASE_BUF=(__afl_fuzz_ptr ? __afl_fuzz_ptr : __afl_fuzz_alt_ptr)' '-D__AFL_FUZZ_TESTCASE_LEN=(__afl_fuzz_ptr ? *__afl_fuzz_len : (*__afl_fuzz_len = read(0, __afl_fuzz_alt_ptr, 1048576)) == 0xffffffff ? 0 : *__afl_fuzz_len)' '-D__AFL_LOOP(_A)=({ static volatile const char *_B __attribute__((used,unused));  _B = (const char*)"##SIG_AFL_PERSISTENT##"; extern __attribute__((visibility("default"))) int __afl_connected;__attribute__((visibility("default"))) int _L(unsigned int) __asm__("__afl_persistent_loop"); _L(__afl_connected ? _A : 1); })' '-D__AFL_INIT()=do { static volatile const char *_A __attribute__((used,unused));  _A = (const char*)"##SIG_AFL_DEFER_FORKSRV##"; __attribute__((visibility("default"))) void _I(void) __asm__("__afl_manual_init"); _I(); } while (0)' './afl-compiler-rt.o' '-Wl,--dynamic-list=./dynamic_list.txt' '(null)'
+[0;36mSanitizerCoveragePCGUARD++4.32a[0m
+SanitizerCoveragePCGUARD: instrumenting main in test-instr.c
+SANCOV: installed pcguard_init in ctor
+[1;92m[+] [0mInstrumented 13 locations with no collisions (non-hardened mode) of which are 0 handled and 0 unhandled selects.[0m
+ASAN_OPTIONS=detect_leaks=0 ./afl-showmap -q -m none -o .test-instr0 ./test-instr < /dev/null
+[91m[0;35m[D] [1;97mDEBUG: [0m[0m[0m[91mDEBUG: debug enabled
+DEBUG: AFL++ afl-compiler-rt++4.32a
+DEBUG: (1) id_str 4, __afl_area_ptr 0x409200, __afl_area_initial 0x409200, __afl_area_ptr_dummy 0x409200, __afl_map_addr 0x0, MAP_SIZE 65536, __afl_final_loc 0, __afl_map_size 65536
+DEBUG: (2) id_str 4, __afl_area_ptr 0x7b5eabf78000, __afl_area_initial 0x409200, __afl_area_ptr_dummy 0x409200, __afl_map_addr 0x0, MAP_SIZE 65536, __afl_final_loc 0, __afl_map_size 65536
+DEBUG: cmplog id_str <null>
+DEBUG: Running __sanitizer_cov_trace_pc_guard_init: 0x4091b0-0x4091e8 (14 edges) after_fs=0 *start=0
+DEBUG: Done __sanitizer_cov_trace_pc_guard_init: __afl_final_loc = 18
+[0m ./afl-showmap -q -m none -o .test-instr0 ./test-instr
+[1;92m[+] [0mEnabled environment variable AFL_DEBUG_CHILD with value 1[0m
+[1;94m[*] [0mSpinning up the fork server...[0m
+[1;92m[+] [0mAll right - new fork server model v1 is up.[0m
+[1;94m[*] [0mForkserver options received: (0x00000001)[0m
+[1;94m[*] [0mTarget map size: 19[0m
+echo 1 | ASAN_OPTIONS=detect_leaks=0 ./afl-showmap -m none -q -o .test-instr1 ./test-instr
+[91m[0;35m[D] [1;97mDEBUG: [0m[0m[0m[91mDEBUG: debug enabled
+DEBUG: AFL++ afl-compiler-rt++4.32a
+DEBUG: (1) id_str 6, __afl_area_ptr 0x409200, __afl_area_initial 0x409200, __afl_area_ptr_dummy 0x409200, __afl_map_addr 0x0, MAP_SIZE 65536, __afl_final_loc 0, __afl_map_size 65536
+DEBUG: (2) id_str 6, __afl_area_ptr 0x75865b348000, __afl_area_initial 0x409200, __afl_area_ptr_dummy 0x409200, __afl_map_addr 0x0, MAP_SIZE 65536, __afl_final_loc 0, __afl_map_size 65536
+DEBUG: cmplog id_str <null>
+DEBUG: Running __sanitizer_cov_trace_pc_guard_init: 0x4091b0-0x4091e8 (14 edges) after_fs=0 *start=0
+DEBUG: Done __sanitizer_cov_trace_pc_guard_init: __afl_final_loc = 18
+[0m ./afl-showmap -m none -q -o .test-instr1 ./test-instr
+[1;92m[+] [0mEnabled environment variable AFL_DEBUG_CHILD with value 1[0m
+[1;94m[*] [0mSpinning up the fork server...[0m
+[1;92m[+] [0mAll right - new fork server model v1 is up.[0m
+[1;94m[*] [0mForkserver options received: (0x00000001)[0m
+[1;94m[*] [0mTarget map size: 19[0m
+
+[+] All right, the instrumentation of afl-cc seems to be working!
+[+] Main compiler 'afl-cc' successfully built!
+[+] LLVM mode for 'afl-cc' successfully built!
+[+] LLVM LTO mode for 'afl-cc' successfully built!
+[-] gcc_plugin for 'afl-cc'  failed to build, unless you really need it that is fine - or read instrumentation/README.gcc_plugin.md how to build it
+[+] All done! Be sure to review the README.md - it's pretty short and useful.
+make -C utils/aflpp_driver
+make[1]: Entering directory '/magma/fuzzers/afl_uaf_detect/repo/utils/aflpp_driver'
+/usr/lib/llvm-13/bin/clang -I. -I../../include -O3 -funroll-loops -g -fPIC -c aflpp_driver.c
+/usr/lib/llvm-13/bin/clang -O3 -funroll-loops -g -fPIC -O0 -funroll-loops -c aflpp_qemu_driver.c
+Note: Optional aflpp_qemu_driver_hook.o not built.
+'libAFLQemuDriver.a' -> '../../libAFLQemuDriver.a'
+Note: Optional aflpp_qemu_driver_hook.so not built.
+'libAFLDriver.a' -> '../../libAFLDriver.a'
+make[1]: Leaving directory '/magma/fuzzers/afl_uaf_detect/repo/utils/aflpp_driver'
+
+
+
+
+Build Summary:
+[+] afl-fuzz and supporting tools successfully built
+[+] LLVM basic mode successfully built
+[+] LLVM mode successfully built
+[+] LLVM LTO mode successfully built
+[-] gcc_mode could not be built, it is optional, install gcc-VERSION-plugin-dev to enable this
+
+/magma/fuzzers/afl_uaf_detect/repo
+afl-llvm-uaf-pass.so
+ ---> Removed intermediate container 82a3d59d5223
+ ---> 1e2fc91def89
+Step 39/61 : ARG target_name
+ ---> Running in f087a9542e7b
+ ---> Removed intermediate container f087a9542e7b
+ ---> 507cdacc8fcf
+Step 40/61 : ARG target_path=targets/${target_name}
+ ---> Running in f09369e85c02
+ ---> Removed intermediate container f09369e85c02
+ ---> 4969118d1d0c
+Step 41/61 : ENV TARGET 	${MAGMA_R}/${target_path}
+ ---> Running in bb1573470f5b
+ ---> Removed intermediate container bb1573470f5b
+ ---> 1a6547109226
+Step 42/61 : USER root:root
+ ---> Running in 99e9f03d588c
+ ---> Removed intermediate container 99e9f03d588c
+ ---> 42c0f42d546b
+Step 43/61 : RUN mkdir -p ${TARGET} && chown magma:magma ${TARGET}
+ ---> Running in bc5a1cb1369f
+ ---> Removed intermediate container bc5a1cb1369f
+ ---> a64f5698c24c
+Step 44/61 : COPY --chown=magma:magma ${magma_root}/${target_path} ${TARGET}/
+ ---> 6dfca7001ffe
+Step 45/61 : RUN ${TARGET}/preinstall.sh
+ ---> Running in aab2a55dbc8e
+Hit:2 http://archive.ubuntu.com/ubuntu jammy InRelease
+Hit:3 http://archive.ubuntu.com/ubuntu jammy-updates InRelease
+Hit:4 http://archive.ubuntu.com/ubuntu jammy-backports InRelease
+Hit:1 https://apt.llvm.org/jammy llvm-toolchain-jammy-13 InRelease
+Hit:5 http://security.ubuntu.com/ubuntu jammy-security InRelease
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+make is already the newest version (4.3-4.1build1).
+git is already the newest version (1:2.34.1-1ubuntu1.15).
+The following additional packages will be installed:
+  autotools-dev file libltdl-dev libltdl7 libmagic-mgc libmagic1 libsigsegv2
+  m4
+Suggested packages:
+  autoconf-archive gnu-standards autoconf-doc gettext libtool-doc gfortran
+  | fortran95-compiler gcj-jdk m4-doc
+The following NEW packages will be installed:
+  autoconf automake autotools-dev file libltdl-dev libltdl7 libmagic-mgc
+  libmagic1 libsigsegv2 libtool m4 zlib1g-dev
+0 upgraded, 12 newly installed, 0 to remove and 17 not upgraded.
+Need to get 2057 kB of archives.
+After this operation, 15.1 MB of additional disk space will be used.
+Get:1 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libmagic-mgc amd64 1:5.41-3ubuntu0.1 [257 kB]
+Get:2 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 libmagic1 amd64 1:5.41-3ubuntu0.1 [87.2 kB]
+Get:3 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 file amd64 1:5.41-3ubuntu0.1 [21.5 kB]
+Get:4 http://archive.ubuntu.com/ubuntu jammy/main amd64 libsigsegv2 amd64 2.13-1ubuntu3 [14.6 kB]
+Get:5 http://archive.ubuntu.com/ubuntu jammy/main amd64 m4 amd64 1.4.18-5ubuntu2 [199 kB]
+Get:6 http://archive.ubuntu.com/ubuntu jammy/main amd64 autoconf all 2.71-2 [338 kB]
+Get:7 http://archive.ubuntu.com/ubuntu jammy/main amd64 autotools-dev all 20220109.1 [44.9 kB]
+Get:8 http://archive.ubuntu.com/ubuntu jammy/main amd64 automake all 1:1.16.5-1.3 [558 kB]
+Get:9 http://archive.ubuntu.com/ubuntu jammy/main amd64 libltdl7 amd64 2.4.6-15build2 [39.6 kB]
+Get:10 http://archive.ubuntu.com/ubuntu jammy/main amd64 libltdl-dev amd64 2.4.6-15build2 [169 kB]
+Get:11 http://archive.ubuntu.com/ubuntu jammy/main amd64 libtool all 2.4.6-15build2 [164 kB]
+Get:12 http://archive.ubuntu.com/ubuntu jammy-updates/main amd64 zlib1g-dev amd64 1:1.2.11.dfsg-2ubuntu9.2 [164 kB]
+[91mdebconf: delaying package configuration, since apt-utils is not installed
+[0mFetched 2057 kB in 0s (4803 kB/s)
+Selecting previously unselected package libmagic-mgc.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 24173 files and directories currently installed.)
+Preparing to unpack .../00-libmagic-mgc_1%3a5.41-3ubuntu0.1_amd64.deb ...
+Unpacking libmagic-mgc (1:5.41-3ubuntu0.1) ...
+Selecting previously unselected package libmagic1:amd64.
+Preparing to unpack .../01-libmagic1_1%3a5.41-3ubuntu0.1_amd64.deb ...
+Unpacking libmagic1:amd64 (1:5.41-3ubuntu0.1) ...
+Selecting previously unselected package file.
+Preparing to unpack .../02-file_1%3a5.41-3ubuntu0.1_amd64.deb ...
+Unpacking file (1:5.41-3ubuntu0.1) ...
+Selecting previously unselected package libsigsegv2:amd64.
+Preparing to unpack .../03-libsigsegv2_2.13-1ubuntu3_amd64.deb ...
+Unpacking libsigsegv2:amd64 (2.13-1ubuntu3) ...
+Selecting previously unselected package m4.
+Preparing to unpack .../04-m4_1.4.18-5ubuntu2_amd64.deb ...
+Unpacking m4 (1.4.18-5ubuntu2) ...
+Selecting previously unselected package autoconf.
+Preparing to unpack .../05-autoconf_2.71-2_all.deb ...
+Unpacking autoconf (2.71-2) ...
+Selecting previously unselected package autotools-dev.
+Preparing to unpack .../06-autotools-dev_20220109.1_all.deb ...
+Unpacking autotools-dev (20220109.1) ...
+Selecting previously unselected package automake.
+Preparing to unpack .../07-automake_1%3a1.16.5-1.3_all.deb ...
+Unpacking automake (1:1.16.5-1.3) ...
+Selecting previously unselected package libltdl7:amd64.
+Preparing to unpack .../08-libltdl7_2.4.6-15build2_amd64.deb ...
+Unpacking libltdl7:amd64 (2.4.6-15build2) ...
+Selecting previously unselected package libltdl-dev:amd64.
+Preparing to unpack .../09-libltdl-dev_2.4.6-15build2_amd64.deb ...
+Unpacking libltdl-dev:amd64 (2.4.6-15build2) ...
+Selecting previously unselected package libtool.
+Preparing to unpack .../10-libtool_2.4.6-15build2_all.deb ...
+Unpacking libtool (2.4.6-15build2) ...
+Selecting previously unselected package zlib1g-dev:amd64.
+Preparing to unpack .../11-zlib1g-dev_1%3a1.2.11.dfsg-2ubuntu9.2_amd64.deb ...
+Unpacking zlib1g-dev:amd64 (1:1.2.11.dfsg-2ubuntu9.2) ...
+Setting up libmagic-mgc (1:5.41-3ubuntu0.1) ...
+Setting up libmagic1:amd64 (1:5.41-3ubuntu0.1) ...
+Setting up file (1:5.41-3ubuntu0.1) ...
+Setting up autotools-dev (20220109.1) ...
+Setting up libsigsegv2:amd64 (2.13-1ubuntu3) ...
+Setting up libltdl7:amd64 (2.4.6-15build2) ...
+Setting up zlib1g-dev:amd64 (1:1.2.11.dfsg-2ubuntu9.2) ...
+Setting up libtool (2.4.6-15build2) ...
+Setting up m4 (1.4.18-5ubuntu2) ...
+Setting up autoconf (2.71-2) ...
+Setting up automake (1:1.16.5-1.3) ...
+update-alternatives: using /usr/bin/automake-1.16 to provide /usr/bin/automake (automake) in auto mode
+update-alternatives: warning: skip creation of /usr/share/man/man1/automake.1.gz because associated file /usr/share/man/man1/automake-1.16.1.gz (of link group automake) doesn't exist
+update-alternatives: warning: skip creation of /usr/share/man/man1/aclocal.1.gz because associated file /usr/share/man/man1/aclocal-1.16.1.gz (of link group automake) doesn't exist
+Setting up libltdl-dev:amd64 (2.4.6-15build2) ...
+Processing triggers for libc-bin (2.35-0ubuntu3.10) ...
+ ---> Removed intermediate container aab2a55dbc8e
+ ---> d9bb4dfbe90c
+Step 46/61 : USER magma:magma
+ ---> Running in bc0ed669097c
+ ---> Removed intermediate container bc0ed669097c
+ ---> 790d0a3066a6
+Step 47/61 : RUN ${TARGET}/fetch.sh && ${MAGMA}/apply_patches.sh
+ ---> Running in 3ef85617b030
+[91mCloning into '/magma/targets/libpng/repo'...
+[0mcontext canceled

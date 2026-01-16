@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-exec > >(tee -a /home/magma_workdir/log/afl_uaf_detect_libpng_build.log) 2>&1
+mkdir -p "$SHARED/log"
+exec > >(tee -a "$SHARED/log/afl_uaf_detect_libpng_build.log") 2>&1
 
 ##
 # Pre-requirements:
@@ -22,14 +23,12 @@ export LDFLAGS="$LDFLAGS -fsanitize=address"
 
 export LIBS="$LIBS -l:afl_driver.o -lstdc++"
 
-#build SVF Driver
-cmake -S repo/SVF_drivers -B repo/SVF_drivers/build
-cmake --build . --verbose
+"$MAGMA/build.sh"
 
 #link target files: use target/build.sh script, set compiler to clang-13
+chmod 755 "$TARGET/instrument.sh"
 "$TARGET/instrument.sh"
 
-"$MAGMA/build.sh"
 "$TARGET/build.sh"
 
 # NOTE: We pass $OUT directly to the target build.sh script, since the artifact

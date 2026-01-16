@@ -23,9 +23,10 @@ make -j$(nproc) libpng16.la
 cp .libs/libpng16.a "$OUT/"
 
 # compile and link target into one bit code file
+mkdir -p "$OUT/libpng_read_fuzzer"
 clang-13 -O0 -g -emit-llvm -std=c++11 -I. \
-     contrib/oss-fuzz/libpng_read_fuzzer.cc -o - | \
-     llvm-link - .libs/libpng16.a $LIBS -lz > $OUT/libpng_read_fuzzer/libpng_linked_bitcode.bc
+     -c contrib/oss-fuzz/libpng_read_fuzzer.cc -o - | \
+     llvm-link - > $OUT/libpng_read_fuzzer/libpng_linked_bitcode.bc
 
 #run SVF Driver on libpng_read_fuzzer
-/magma/fuzzers/afl_uaf_detect/repo/SVF_drivers/build/svf-icfg-driver --input-bc $OUT/libpng_read_fuzzer/libpng_linked_bitcode.bc
+$FUZZER/repo/SVF_drivers/build/svf-icfg-driver --input-bc $OUT/libpng_read_fuzzer/libpng_linked_bitcode.bc

@@ -3,15 +3,16 @@ set -e
 export DEBIAN_FRONTEND=noninteractive
 
 apt-get update && \
-    apt-get install -y make build-essential git wget lsb-release gnupg software-properties-common
+    apt-get install -y make build-essential git wget lsb-release gnupg software-properties-common \
+    cmake ninja-build python3 \
+    zlib1g-dev libz3-dev z3 \
+    libtinfo5 
 
 wget https://apt.llvm.org/llvm.sh
 chmod +x llvm.sh
 ./llvm.sh 13   # installs clang-13, lld-13, lldb-13, etc.
-#wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
-#    add-apt-repository "deb http://apt.llvm.org/$(lsb_release -cs)/ llvm-toolchain-$(lsb_release -cs)-13 main"
 
-apt-get install -y clang-13
+apt-get install -y clang-13 && rm -rf /var/lib/apt/lists/*
 
 update-alternatives \
   --install /usr/lib/llvm              llvm             /usr/lib/llvm-13  20 \
@@ -41,3 +42,26 @@ update-alternatives \
   --install /usr/bin/clang                 clang                  /usr/bin/clang-13     20 \
   --slave   /usr/bin/clang++               clang++                /usr/bin/clang++-13 \
   --slave   /usr/bin/clang-cpp             clang-cpp              /usr/bin/clang-cpp-13
+# -----------------------------
+# Install + build SVF
+# -----------------------------
+export LLVM_DIR=/usr/lib/llvm-13
+export PATH=/usr/lib/llvm-13/bin:$PATH
+export BUILD_TYPE='Release'
+export BUILD_DIR="./build"
+export SVFHOME="/SVF"
+
+git clone https://github.com/SVF-tools/SVF.git
+cd $SVFHOME
+git checkout SVF-2.6
+rm -rf "${BUILD_DIR}"
+mkdir "${BUILD_DIR}"
+cmake -D CMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}" \
+  -DSVF_ENABLE_ASSERTIONS:BOOL=true            \
+  -DSVF_SANITIZE="OFF"            \
+  -S "${SVFHOME}" -B "${BUILD_DIR}"
+cmake --build "${BUILD_DIR}"
+
+# Make SVF available to later steps (build.sh)
+echo "export PATH=${SVF_PREFIX}/bin:\$PATH" >> /etc/profile.d/svf.sh
+echo "export LD_LIBRARY_PATH=${SVF_PREFIX}/lib:\$LD_LIBRARY_PATH" >> /etc/profile.d/svf.sh

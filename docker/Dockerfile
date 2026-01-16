@@ -51,8 +51,10 @@ ARG fuzzer_path=fuzzers/${fuzzer_name}
 ENV FUZZER 	${MAGMA_R}/${fuzzer_path}
 USER root:root
 RUN mkdir -p ${FUZZER} && chown magma:magma ${FUZZER}
-COPY --chown=magma:magma ${magma_root}/${fuzzer_path} ${FUZZER}/
+#for the fuzzer's preinstall step to be cached, copy it seperately
+COPY --chown=magma:magma ${magma_root}/${fuzzer_path}/preinstall.sh ${FUZZER}/preinstall.sh
 RUN ${FUZZER}/preinstall.sh
+COPY --chown=magma:magma ${magma_root}/${fuzzer_path} ${FUZZER}/
 USER magma:magma
 ARG CACHE_BUST=0
 RUN echo "Rebuilding AFL++ due to CACHE_BUST=${CACHE_BUST}" && \
@@ -64,8 +66,11 @@ ARG target_path=targets/${target_name}
 ENV TARGET 	${MAGMA_R}/${target_path}
 USER root:root
 RUN mkdir -p ${TARGET} && chown magma:magma ${TARGET}
-COPY --chown=magma:magma ${magma_root}/${target_path} ${TARGET}/
+
+#for the target's preinstall step to be cached, copy it seperately
+COPY --chown=magma:magma ${magma_root}/${target_path}/preinstall.sh ${TARGET}/preinstall.sh
 RUN ${TARGET}/preinstall.sh
+COPY --chown=magma:magma ${magma_root}/${target_path} ${TARGET}/
 USER magma:magma
 RUN ${TARGET}/fetch.sh && ${MAGMA}/apply_patches.sh
 
@@ -86,7 +91,7 @@ ENV CXXFLAGS ${BUILD_FLAGS}
 ENV LIBS -l:magma.o -lrt
 ENV LDFLAGS -L"${OUT}" -g
 
-RUN ${FUZZER}/instrument.sh
+#RUN ${FUZZER}/instrument.sh
 
 CMD ["/bin/bash"]
 
