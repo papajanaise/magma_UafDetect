@@ -14,15 +14,15 @@ export TIMELIMIT=0.1s
 
 run_limited()
 {
-    set -e
     ${@:1}
+    test $? -lt 128
 }
 export -f run_limited
 
-args="${ARGS/@@/"'$1'"}"
+args="${ARGS/@@/"$1"}"
 if [ -z "$args" ]; then
-    args="'$1'"
+    args="$1"
 fi
 
 timeout -s KILL --preserve-status $TIMELIMIT bash -c \
-    "run_limited '$OUT/$PROGRAM' $args"
+    "run_limited '$OUT/afl/$PROGRAM' $args"

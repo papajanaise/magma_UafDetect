@@ -1,0 +1,20 @@
+--- a/ssl/t1_lib.c
++++ b/ssl/t1_lib.c
+@@ -367,9 +367,17 @@ static int add_provider_groups(const OSSL_PARAM params[], void *data)
+  err:
+     if (ginf != NULL) {
+         OPENSSL_free(ginf->tlsname);
++#ifndef MAGMA_ENABLE_FIXES
++        /* Bug: tlsname already freed; strlen dereferences freed memory */
++        if (ginf->tlsname != NULL && strlen(ginf->tlsname) > 0)
++            ret = 0;
++#endif
++#ifdef MAGMA_ENABLE_CANARIES
++        MAGMA_LOG("%MAGMA_BUG%", ginf->tlsname != NULL);
++#endif
+         OPENSSL_free(ginf->realname);
+         OPENSSL_free(ginf->algorithm);
+         ginf->tlsname = ginf->realname = NULL;
+     }
+     return ret;
+ }

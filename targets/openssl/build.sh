@@ -30,8 +30,8 @@ export LDLIBS="$LIBS"
     enable-ssl3-method enable-nextprotoneg enable-weak-ssl-ciphers \
     $CFLAGS -fno-sanitize=alignment $CONFIGURE_FLAGS
 
-make -j$(nproc) clean
-make -j$(nproc) LDCMD="$CXX $CXXFLAGS"
+make -j"${MAGMA_JOBS:-$(nproc)}" clean
+make -j"${MAGMA_JOBS:-$(nproc)}" LDCMD="$CXX $CXXFLAGS"
 
 fuzzers=$(find fuzz -executable -type f '!' -name \*.py '!' -name \*-test '!' -name \*.pl)
 for f in $fuzzers; do

@@ -1,0 +1,22 @@
+--- a/ssl/ssl_lib.c
++++ b/ssl/ssl_lib.c
+@@ -3449,10 +3449,19 @@ void SSL_CTX_free(SSL_CTX *a)
+     for (j = 0; j < SSL_MD_NUM_IDX; j++)
+         ssl_evp_md_free(a->ssl_digest_methods[j]);
++#ifndef MAGMA_ENABLE_FIXES
++    /* Bug: group_list freed before the loop that dereferences its entries */
++    OPENSSL_free(a->group_list);
++#endif
+     for (j = 0; j < a->group_list_len; j++) {
+         OPENSSL_free(a->group_list[j].tlsname);
+         OPENSSL_free(a->group_list[j].realname);
+         OPENSSL_free(a->group_list[j].algorithm);
+     }
++#ifdef MAGMA_ENABLE_FIXES
+     OPENSSL_free(a->group_list);
++#endif
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("%MAGMA_BUG%", a->group_list_len > 0);
++#endif
+
+     OPENSSL_free(a->sigalg_lookup_cache);

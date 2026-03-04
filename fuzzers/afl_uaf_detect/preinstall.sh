@@ -1,67 +1,74 @@
 #!/bin/bash
 set -e
-export DEBIAN_FRONTEND=noninteractive
 
 apt-get update && \
-    apt-get install -y make build-essential git wget lsb-release gnupg software-properties-common \
-    cmake ninja-build python3 \
-    zlib1g-dev libz3-dev z3 \
-    libtinfo5 
+    apt-get install -y make cmake build-essential git wget libexpat1-dev
 
-wget https://apt.llvm.org/llvm.sh
-chmod +x llvm.sh
-./llvm.sh 13   # installs clang-13, lld-13, lldb-13, etc.
+apt-get install -y apt-utils apt-transport-https ca-certificates gnupg
 
-apt-get install -y clang-13 && rm -rf /var/lib/apt/lists/*
+echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main" >> /etc/apt/sources.list
+wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 
-update-alternatives \
-  --install /usr/lib/llvm              llvm             /usr/lib/llvm-13  20 \
-  --slave   /usr/bin/llvm-config       llvm-config      /usr/bin/llvm-config-13  \
-    --slave   /usr/bin/llvm-ar           llvm-ar          /usr/bin/llvm-ar-13 \
-    --slave   /usr/bin/llvm-as           llvm-as          /usr/bin/llvm-as-13 \
-    --slave   /usr/bin/llvm-bcanalyzer   llvm-bcanalyzer  /usr/bin/llvm-bcanalyzer-13 \
-    --slave   /usr/bin/llvm-c-test       llvm-c-test      /usr/bin/llvm-c-test-13 \
-    --slave   /usr/bin/llvm-cov          llvm-cov         /usr/bin/llvm-cov-13 \
-    --slave   /usr/bin/llvm-diff         llvm-diff        /usr/bin/llvm-diff-13 \
-    --slave   /usr/bin/llvm-dis          llvm-dis         /usr/bin/llvm-dis-13 \
-    --slave   /usr/bin/llvm-dwarfdump    llvm-dwarfdump   /usr/bin/llvm-dwarfdump-13 \
-    --slave   /usr/bin/llvm-extract      llvm-extract     /usr/bin/llvm-extract-13 \
-    --slave   /usr/bin/llvm-link         llvm-link        /usr/bin/llvm-link-13 \
-    --slave   /usr/bin/llvm-mc           llvm-mc          /usr/bin/llvm-mc-13 \
-    --slave   /usr/bin/llvm-nm           llvm-nm          /usr/bin/llvm-nm-13 \
-    --slave   /usr/bin/llvm-objdump      llvm-objdump     /usr/bin/llvm-objdump-13 \
-    --slave   /usr/bin/llvm-ranlib       llvm-ranlib      /usr/bin/llvm-ranlib-13 \
-    --slave   /usr/bin/llvm-readobj      llvm-readobj     /usr/bin/llvm-readobj-13 \
-    --slave   /usr/bin/llvm-rtdyld       llvm-rtdyld      /usr/bin/llvm-rtdyld-13 \
-    --slave   /usr/bin/llvm-size         llvm-size        /usr/bin/llvm-size-13 \
-    --slave   /usr/bin/llvm-stress       llvm-stress      /usr/bin/llvm-stress-13 \
-    --slave   /usr/bin/llvm-symbolizer   llvm-symbolizer  /usr/bin/llvm-symbolizer-13 \
-    --slave   /usr/bin/llvm-tblgen       llvm-tblgen      /usr/bin/llvm-tblgen-13
+apt-get update && \
+    apt-get install -y clang-16 clangd-16 clang-tools-16 libc++1-16 libc++-16-dev \
+      libc++abi1-16 libc++abi-16-dev libclang1-16 libclang-16-dev libclang-common-16-dev \
+      libclang-cpp11 libclang-cpp11-dev liblld-16 liblld-16-dev liblldb-16 \
+      liblldb-16-dev libllvm11 libomp-16-dev libomp5-16 lld-16 lldb-16 \
+      llvm-16 llvm-16-dev llvm-16-runtime llvm-16-tools
 
 update-alternatives \
-  --install /usr/bin/clang                 clang                  /usr/bin/clang-13     20 \
-  --slave   /usr/bin/clang++               clang++                /usr/bin/clang++-13 \
-  --slave   /usr/bin/clang-cpp             clang-cpp              /usr/bin/clang-cpp-13
-# -----------------------------
-# Install + build SVF
-# -----------------------------
-export LLVM_DIR=/usr/lib/llvm-13
-export PATH=/usr/lib/llvm-13/bin:$PATH
-export BUILD_TYPE='Release'
-export BUILD_DIR="./build"
-export SVFHOME="/SVF"
+  --install /usr/lib/llvm              llvm             /usr/lib/llvm-16  20 \
+  --slave   /usr/bin/llvm-config       llvm-config      /usr/bin/llvm-config-16  \
+    --slave   /usr/bin/llvm-ar           llvm-ar          /usr/bin/llvm-ar-16 \
+    --slave   /usr/bin/llvm-as           llvm-as          /usr/bin/llvm-as-16 \
+    --slave   /usr/bin/llvm-bcanalyzer   llvm-bcanalyzer  /usr/bin/llvm-bcanalyzer-16 \
+    --slave   /usr/bin/llvm-c-test       llvm-c-test      /usr/bin/llvm-c-test-16 \
+    --slave   /usr/bin/llvm-cov          llvm-cov         /usr/bin/llvm-cov-16 \
+    --slave   /usr/bin/llvm-diff         llvm-diff        /usr/bin/llvm-diff-16 \
+    --slave   /usr/bin/llvm-dis          llvm-dis         /usr/bin/llvm-dis-16 \
+    --slave   /usr/bin/llvm-dwarfdump    llvm-dwarfdump   /usr/bin/llvm-dwarfdump-16 \
+    --slave   /usr/bin/llvm-extract      llvm-extract     /usr/bin/llvm-extract-16 \
+    --slave   /usr/bin/llvm-link         llvm-link        /usr/bin/llvm-link-16 \
+    --slave   /usr/bin/llvm-mc           llvm-mc          /usr/bin/llvm-mc-16 \
+    --slave   /usr/bin/llvm-nm           llvm-nm          /usr/bin/llvm-nm-16 \
+    --slave   /usr/bin/llvm-objdump      llvm-objdump     /usr/bin/llvm-objdump-16 \
+    --slave   /usr/bin/llvm-ranlib       llvm-ranlib      /usr/bin/llvm-ranlib-16 \
+    --slave   /usr/bin/llvm-readobj      llvm-readobj     /usr/bin/llvm-readobj-16 \
+    --slave   /usr/bin/llvm-rtdyld       llvm-rtdyld      /usr/bin/llvm-rtdyld-16 \
+    --slave   /usr/bin/llvm-size         llvm-size        /usr/bin/llvm-size-16 \
+    --slave   /usr/bin/llvm-stress       llvm-stress      /usr/bin/llvm-stress-16 \
+    --slave   /usr/bin/llvm-symbolizer   llvm-symbolizer  /usr/bin/llvm-symbolizer-16 \
+    --slave   /usr/bin/llvm-tblgen       llvm-tblgen      /usr/bin/llvm-tblgen-16
 
-git clone https://github.com/SVF-tools/SVF.git
-cd $SVFHOME
-git checkout SVF-2.6
-rm -rf "${BUILD_DIR}"
-mkdir "${BUILD_DIR}"
-cmake -D CMAKE_BUILD_TYPE:STRING="${BUILD_TYPE}" \
-  -DSVF_ENABLE_ASSERTIONS:BOOL=true            \
-  -DSVF_SANITIZE="OFF"            \
-  -S "${SVFHOME}" -B "${BUILD_DIR}"
-cmake --build "${BUILD_DIR}"
+update-alternatives \
+  --install /usr/bin/clang                 clang                  /usr/bin/clang-16     20 \
+  --slave   /usr/bin/clang++               clang++                /usr/bin/clang++-16 \
+  --slave   /usr/bin/clang-cpp             clang-cpp              /usr/bin/clang-cpp-16
 
-# Make SVF available to later steps (build.sh)
-echo "export PATH=${SVF_PREFIX}/bin:\$PATH" >> /etc/profile.d/svf.sh
-echo "export LD_LIBRARY_PATH=${SVF_PREFIX}/lib:\$LD_LIBRARY_PATH" >> /etc/profile.d/svf.sh
+
+# ── Install Go from official tarball ──
+# Don't use `apt install golang-go` — on Ubuntu 18.04 that gives Go 1.10,
+# which is too old for `go install ...@latest` (needs Go ≥1.17).
+GO_VERSION="1.22.4"
+wget -qO- "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" \
+    | tar -C /usr/local -xz
+
+# Make go available system-wide
+echo 'export PATH=/usr/local/go/bin:$HOME/go/bin:$PATH' \
+    >> /etc/profile.d/golang.sh
+
+# Also make it available in this session and child scripts
+export PATH="/usr/local/go/bin:$PATH"
+
+# ── Install gllvm ──
+# GOPATH defaults to $HOME/go. Since preinstall.sh runs as root,
+# binaries land in /root/go/bin. We install to /usr/local instead.
+GOBIN=/usr/local/bin go install github.com/SRI-CSL/gllvm/cmd/...@latest
+
+# ── Verify ──
+gclang --version  || echo "WARNING: gclang not on PATH yet (will be after login)"
+get-bc --help     || true
+
+# ── gllvm runtime dependencies (should already be there, but just in case) ──
+apt-get update -qq
+apt-get install -y -qq llvm clang

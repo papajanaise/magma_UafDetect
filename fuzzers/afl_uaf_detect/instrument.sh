@@ -1,36 +1,41 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 mkdir -p "$SHARED/log"
 exec > >(tee -a "$SHARED/log/afl_uaf_detect_libpng_build.log") 2>&1
 
 ##
-# Pre-requirements:
-# - env FUZZER: path to fuzzer work dir
-# - env TARGET: path to target work dir
-# - env MAGMA: path to Magma support files
-# - env OUT: path to directory where artifacts are stored
-# - env CFLAGS and CXXFLAGS must be set to link against Magma instrumentation
+## PHASE 1: Build target with gclang to get normal binaries + embedded bitcode
+##
+
+# Tell gllvm to use vanilla clang underneath
+export LLVM_COMPILER_PATH="/usr/lib/llvm-14/bin"  # adjust to your LLVM
+export LLVM_CC_NAME="clang"
+export LLVM_CXX_NAME="clang++"
+
+##
+## PHASE 3: Compile instrumented .bc with afl-clang-fast + link driver
 ##
 
 export CC="$FUZZER/repo/afl-clang-fast"
 export CXX="$FUZZER/repo/afl-clang-fast++"
-export AS="$FUZZER/repo/afl-as"
 
-export CFLAGS="$CFLAGS -fsanitize=address"
-export CXXFLAGS="$CXXFLAGS -fsanitize=address"
-export LDFLAGS="$LDFLAGS -fsanitize=address"
+for bc_file in "$FUZZER/bc_files"/*.instrumented.bc; do
+    name=$(basename "$bc_file" .instrumented.bc)
 
-export LIBS="$LIBS -l:afl_driver.o -lstdc++"
+    # afl-clang-fast accepts .bc input — it will:
+    #   1. Run AFL's instrumentation pass on the bitcode
+    #   2. Compile to native code
+    #   3. Link everything together
+    #
+    # We link: instrumented bitcode + libAFLDriver.a + magma.o + system libs
+    $CXX \
+        "$bc_file" \
+        "$FUZZER/repo/libAFLDriver.a" \
+        $MAGMA_LIBS \
+        $LDFLAGS \
+        -lpthread -lm -lz -lstdc++ \
+        -o "$OUT/${name}"
 
-"$MAGMA/build.sh"
-
-#link target files: use target/build.sh script, set compiler to clang-13
-chmod 755 "$TARGET/instrument.sh"
-"$TARGET/instrument.sh"
-
-"$TARGET/build.sh"
-
-# NOTE: We pass $OUT directly to the target build.sh script, since the artifact
-#       itself is the fuzz target. In the case of Angora, we might need to
-#       replace $OUT by $OUT/fast and $OUT/track, for instance.
+    echo "[*] Final binary: $OUT/${name}"
+done

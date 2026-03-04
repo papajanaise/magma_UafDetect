@@ -10,18 +10,27 @@
 # - env ARGS: extra arguments to pass to the program
 # - env FUZZARGS: extra arguments to pass to the fuzzer
 ##
+echo "Using local aflplusplus_lto_asan run.sh123"
+
 
 mkdir -p "$SHARED/findings"
 
+#flag_cmplog=(-m none -c "$OUT/cmplog/$PROGRAM")
+
 export AFL_SKIP_CPUFREQ=1
 export AFL_NO_AFFINITY=1
-export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
-ulimit -c 0  # Disable core dumps
-export ASAN_OPTIONS="abort_on_error=1:symbolize=0:detect_leaks=0"
-export AFL_USE_UAF_DETECT=1
-export AFL_DEBUG=1
-export AFL_DEBUG_CHILD=1
+#export AFL_NO_UI=1
+export AFL_MAP_SIZE=10000000
+export AFL_DRIVER_DONT_DEFER=1
+export AFL_LLVM_CMPLOG="$OUT/cmplog/$PROGRAM"
+export ASAN_OPTIONS="use_sigaltstack=0:allocator_may_return_null=1:abort_on_error=1:symbolize=0" 
+unset AFL_CMPLOG
 
+echo "PROGRAM=$PROGRAM"
+echo "ARGS=$ARGS"
+echo "FUZZARGS=$FUZZARGS"
 
-"$FUZZER/repo/afl-fuzz" -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
-    $FUZZARGS -- "$OUT/$PROGRAM" $ARGS 2>&1
+"$FUZZER/repo/afl-fuzz" -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" -d \
+    $FUZZARGS -- "$OUT/afl/$PROGRAM" $ARGS 2>&1
+
+    #"${flag_cmplog[@]}"

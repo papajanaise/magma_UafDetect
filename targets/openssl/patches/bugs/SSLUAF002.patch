@@ -1,0 +1,16 @@
+--- a/ssl/ssl_sess.c
++++ b/ssl/ssl_sess.c
+@@ -675,8 +675,13 @@ int ssl_get_prev_session(SSL *s, CLIENTHELLO_MSG *hello)
+  err:
+     if (ret != NULL) {
+         SSL_SESSION_free(ret);
++#ifdef MAGMA_ENABLE_FIXES
+         /* In TLSv1.3 s->session was already set to ret, so we NULL it out */
+         if (SSL_IS_TLS13(s))
+             s->session = NULL;
++#endif
++#ifdef MAGMA_ENABLE_CANARIES
++        MAGMA_LOG("%MAGMA_BUG%", SSL_IS_TLS13(s) && ret != NULL);
++#endif
+
+         if (!try_session_cache) {

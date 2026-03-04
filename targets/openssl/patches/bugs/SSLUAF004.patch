@@ -1,0 +1,16 @@
+--- a/ssl/ssl_cert.c
++++ b/ssl/ssl_cert.c
+@@ -209,5 +209,13 @@ void ssl_cert_clear_certs(CERT *c)
+     for (i = 0; i < SSL_PKEY_NUM; i++) {
+         CERT_PKEY *cpk = c->pkeys + i;
+         X509_free(cpk->x509);
++#ifndef MAGMA_ENABLE_FIXES
++        /* Bug: dereference of freed x509 to check certificate version */
++        if (cpk->x509 != NULL && X509_get_version(cpk->x509) >= 0)
++            cpk->serverinfo_length++;
++#endif
++#ifdef MAGMA_ENABLE_CANARIES
++        MAGMA_LOG("%MAGMA_BUG%", cpk->x509 != NULL);
++#endif
+         cpk->x509 = NULL;
+         EVP_PKEY_free(cpk->privatekey);

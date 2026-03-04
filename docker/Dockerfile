@@ -56,10 +56,9 @@ COPY --chown=magma:magma ${magma_root}/${fuzzer_path}/preinstall.sh ${FUZZER}/pr
 RUN ${FUZZER}/preinstall.sh
 COPY --chown=magma:magma ${magma_root}/${fuzzer_path} ${FUZZER}/
 USER magma:magma
-ARG CACHE_BUST=0
-RUN echo "Rebuilding AFL++ due to CACHE_BUST=${CACHE_BUST}" && \
-    ${FUZZER}/fetch.sh && \
-    ${FUZZER}/build.sh
+#RUN echo "Rebuilding AFL++ due to CACHE_BUST=${CACHE_BUST}" && \
+#    ${FUZZER}/fetch.sh && \
+#    ${FUZZER}/build.sh
 
 ARG target_name
 ARG target_path=targets/${target_name}
@@ -72,7 +71,8 @@ COPY --chown=magma:magma ${magma_root}/${target_path}/preinstall.sh ${TARGET}/pr
 RUN ${TARGET}/preinstall.sh
 COPY --chown=magma:magma ${magma_root}/${target_path} ${TARGET}/
 USER magma:magma
-RUN ${TARGET}/fetch.sh && ${MAGMA}/apply_patches.sh
+RUN ${TARGET}/fetch.sh 
+#&& ${MAGMA}/apply_patches.sh
 
 ## Configuration parameters
 ARG isan
