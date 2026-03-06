@@ -20,22 +20,21 @@ export LLVM_CXX_NAME="clang++"
 export CC="$FUZZER/repo/afl-clang-fast"
 export CXX="$FUZZER/repo/afl-clang-fast++"
 
-for bc_file in "$FUZZER/bc_files"/*.instrumented.bc; do
-    name=$(basename "$bc_file" .instrumented.bc)
+for bc_file in "$OUT/"*_instr.bc; do
 
     # afl-clang-fast accepts .bc input — it will:
     #   1. Run AFL's instrumentation pass on the bitcode
     #   2. Compile to native code
     #   3. Link everything together
     #
-    # We link: instrumented bitcode + libAFLDriver.a + magma.o + system libs
+    # The .bc already contains magma symbols (from get-bc/llvm-link),
+    # so do NOT re-link magma.o. Only add system libs not in the bitcode.
     $CXX \
         "$bc_file" \
         "$FUZZER/repo/libAFLDriver.a" \
-        $MAGMA_LIBS \
         $LDFLAGS \
-        -lpthread -lm -lz -lstdc++ \
-        -o "$OUT/${name}"
+        -lpthread -lm -lz -lrt -lstdc++ \
+        -o "$OUT/afl/${PROGRAM}"
 
-    echo "[*] Final binary: $OUT/${name}"
+    echo "[*] Final binary: $OUT/afl/${PROGRAM}"
 done

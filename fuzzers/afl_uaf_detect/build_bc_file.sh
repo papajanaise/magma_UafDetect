@@ -8,7 +8,7 @@ export PATH="$HOME/go/bin:$PATH"
 ##
 
 # Tell gllvm to use vanilla clang underneath
-export LLVM_COMPILER_PATH="/usr/lib/llvm-14/bin"  # adjust to your LLVM
+export LLVM_COMPILER_PATH="/usr/lib/llvm-16/bin"  # must match installed LLVM
 export LLVM_CC_NAME="clang"
 export LLVM_CXX_NAME="clang++"
 
@@ -24,7 +24,7 @@ export CXXFLAGS="$CXXFLAGS -g"
 
 # LIBS includes magma.o for canary support — keep that,
 # but do NOT link libAFLDriver.a yet (that's Phase 3)
-MAGMA_LIBS="$LIBS"
+export MAGMA_LIBS="$LIBS"
 
 # Limit parallelism to avoid hitting process limits (EAGAIN/fork) in containers.
 # gclang wraps each clang call with extra processes, so high -j values exhaust ulimit -u.
@@ -49,15 +49,10 @@ export LIBS="$LIBS -l:stub_main.o"
 ## PHASE 2: Extract .bc and run your custom instrumentation
 ##
 
-mkdir -p "$FUZZER/bc_files"
+# Extract bitcode only for the target's harness programs
+prog="$OUT/$PROGRAM"
+[ -f "$prog" ] || { echo "[!] Binary not found: $prog"; continue; }
 
-# For each harness binary that was placed in $OUT:
-for prog in "$OUT"/*; do
-    [ -f "$prog" ] && [ -x "$prog" ] || continue
-    name=$(basename "$prog")
+get-bc -o "$OUT/$PROGRAM.bc" "$prog"
 
-    # Extract whole-program bitcode
-    get-bc -o "$TARGET/bc_files/${name}.bc" "$prog"
-
-    echo "[*] Extracted $TARGET/bc_files/${name}.bc"
-done
+echo "[*] Extracted $OUT/$PROGRAM.bc"

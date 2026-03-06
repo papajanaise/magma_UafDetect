@@ -24,7 +24,6 @@ export AFL_MAP_SIZE=10000000
 export AFL_DRIVER_DONT_DEFER=1
 export AFL_LLVM_CMPLOG="$OUT/cmplog/$PROGRAM"
 export ASAN_OPTIONS="use_sigaltstack=0:allocator_may_return_null=1:abort_on_error=1:symbolize=0" 
-unset AFL_CMPLOG
 
 echo "PROGRAM=$PROGRAM"
 echo "ARGS=$ARGS"

@@ -30,7 +30,11 @@ echo "PROGRAM=$PROGRAM"
 echo "ARGS=$ARGS"
 echo "FUZZARGS=$FUZZARGS"
 
+if [ "$TARGET_NAME" == "libpng" ]; then
+    export FUZZARGS="$FUZZARGS -x $FUZZER/repo/dictionaries/png.dict"
+fi
+
 "$FUZZER/repo/afl-fuzz" -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" -d \
-    $FUZZARGS -- "$OUT/afl/$PROGRAM" $ARGS 2>&1
+    $FUZZARGS -- "$OUT/afl/$PROGRAM" $ARGS 2>&1 | tee $SHARED/log/afl_output.log
 
     #"${flag_cmplog[@]}"

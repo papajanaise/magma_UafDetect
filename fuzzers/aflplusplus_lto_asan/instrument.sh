@@ -13,6 +13,7 @@ set -e
 export CC="$FUZZER/repo/afl-clang-lto"
 export CXX="$FUZZER/repo/afl-clang-lto++"
 export AFL_USE_ASAN=1
+export ASAN_OPTIONS="${ASAN_OPTIONS:+$ASAN_OPTIONS:}use_sigaltstack=0"
 LLVM_PATH=/usr/lib/llvm-11/bin
 export AS="${LLVM_PATH}/llvm-as"
 export RANLIB="${LLVM_PATH}/llvm-ranlib"
@@ -32,6 +33,7 @@ fi
 # Build the AFL-only instrumented version
 (
     export OUT="$OUT/afl"
+    mkdir -p "$OUT"
     export LDFLAGS="$LDFLAGS -L$OUT"
 
     "$MAGMA/build.sh"
@@ -42,6 +44,7 @@ fi
 
 (
     export OUT="$OUT/cmplog"
+    mkdir -p "$OUT"
     export LDFLAGS="$LDFLAGS -L$OUT"
 
     export AFL_LLVM_CMPLOG=1
