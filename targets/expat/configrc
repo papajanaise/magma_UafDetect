@@ -1,0 +1,3 @@
+PROGRAMS=(expat_fuzzer)
+
+expat_fuzzer_ARGS="@@"
