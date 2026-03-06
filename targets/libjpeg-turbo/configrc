@@ -1,0 +1,3 @@
+PROGRAMS=(libjpeg_turbo_fuzzer)
+
+libjpeg_turbo_fuzzer_ARGS="@@"
