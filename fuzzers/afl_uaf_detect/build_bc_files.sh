@@ -49,10 +49,17 @@ export LIBS="$LIBS -l:stub_main.o"
 ## PHASE 2: Extract .bc and run your custom instrumentation
 ##
 
-# Extract bitcode only for the target's harness programs
-prog="$OUT/$PROGRAM"
-[ -f "$prog" ] || { echo "[!] Binary not found: $prog"; continue; }
+# Extract bitcode for all target harness binaries in $OUT/targets/
+TARGET_DIR="$OUT/targets"
+if [ ! -d "$TARGET_DIR" ]; then
+    echo "[!] No targets directory found at $TARGET_DIR"
+    exit 1
+fi
 
-get-bc -o "$OUT/$PROGRAM.bc" "$prog"
-
-echo "[*] Extracted $OUT/$PROGRAM.bc"
+for prog in "$TARGET_DIR"/*; do
+    [ -f "$prog" ] || continue
+    [[ "$prog" == *.bc ]] && continue
+    name="$(basename "$prog")"
+    get-bc -o "$TARGET_DIR/${name}.bc" "$prog"
+    echo "[*] Extracted $TARGET_DIR/${name}.bc"
+done

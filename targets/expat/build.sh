@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build libexpat and compile the fuzzer harness for Magma
+# Build libexpat and compile all fuzzer harnesses for Magma
 #
 # Environment (set by Magma captain):
 #   CC, CXX          - compiler with fuzzer/sanitizer flags baked in
@@ -31,19 +31,31 @@ make -j"$(nproc)" install
 LIB_DIR="$TARGET/install/lib"
 INC_DIR="$TARGET/install/include"
 
-# --- compile the fuzzer harness ---
-# libexpat ships its own OSS-Fuzz harness under fuzz/xml.c (or xmlparse_fuzzer.c)
-# depending on version; adapt path as needed.
-FUZZ_SRC="$TARGET/repo/expat/fuzz/xml.c"
-if [ ! -f "$FUZZ_SRC" ]; then
-    FUZZ_SRC="$TARGET/repo/expat/fuzz/xmlparse_fuzzer.cc"
-fi
+# --- compile all fuzzer harnesses ---
+# Two fuzzer sources × multiple encodings, matching corpus directories.
+FUZZ_DIR="$TARGET/repo/expat/fuzz"
+ENCODINGS="UTF-8 UTF-16 UTF-16LE UTF-16BE ISO-8859-1 US-ASCII"
 
-$CC $CFLAGS \
-    -I"$INC_DIR" \
-    "$FUZZ_SRC" \
-    -o "$OUT/expat_fuzzer" \
-    $LDFLAGS \
-    -L"$LIB_DIR" -lexpat \
-    $LIBS \
-    -lm
+TARGET_DIR="$OUT/targets"
+mkdir -p "$TARGET_DIR"
+
+for fuzzer_src in xml_parse_fuzzer xml_parsebuffer_fuzzer; do
+    for enc in $ENCODINGS; do
+        output_name="${fuzzer_src}_${enc}"
+        # Only build if a corresponding corpus directory exists
+        if [ ! -d "$TARGET/corpus/${output_name}" ]; then
+            continue
+        fi
+        $CC $CFLAGS \
+            -I"$INC_DIR" \
+            -I"$FUZZ_DIR" \
+            -I"$TARGET/repo/expat/lib" \
+            -DENCODING_FOR_FUZZING="${enc}" \
+            "$FUZZ_DIR/${fuzzer_src}.c" \
+            -o "$TARGET_DIR/${output_name}" \
+            $LDFLAGS \
+            -L"$LIB_DIR" -lexpat \
+            $LIBS \
+            -lm
+    done
+done

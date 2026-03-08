@@ -31,7 +31,7 @@ for seed in "$TARGET/corpus/$PROGRAM"/*; do
 
     if [ $code -ne 0 ]; then
         echo "$seed: $out"
-        rm "$seed"
+        #rm "$seed"
     fi
 done
 

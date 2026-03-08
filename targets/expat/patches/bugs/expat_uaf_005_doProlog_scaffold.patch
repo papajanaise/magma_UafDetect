@@ -1,0 +1,36 @@
+From: UAF Injection Patch 005
+Subject: [PATCH] UAF in xmlparse.c: freed dtd->scaffold array read by build_model
+
+Vulnerability type : Use-After-Free
+File               : expat/lib/xmlparse.c
+Function           : doProlog / build_model
+
+--- a/expat/lib/xmlparse.c
++++ b/expat/lib/xmlparse.c
+@@ -5584,5 +5584,26 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
+         if (dtd->scaffLevel == 0) {
+           if (! handleDefault) {
++            /*
++             * BUG INJECTION (UAF-005):
++             * When the element content model has exactly 3 scaffold nodes
++             * and the name at index 2 starts with 'b', free the scaffold
++             * array before build_model() reads it.
++             *
++             * Trigger:
++             *   <!ELEMENT root (#PCDATA | a | bar)*>
++             */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++            MAGMA_LOG("EXPUAF05", dtd->scaffCount == 3 && dtd->scaffold != NULL && dtd->scaffold[2].name != NULL && dtd->scaffold[2].name[0] == XML_T('b'));
++#endif
++            if (dtd->scaffCount == 3 &&
++                dtd->scaffold != NULL &&
++                dtd->scaffold[2].name != NULL &&
++                dtd->scaffold[2].name[0] == XML_T('b')) {
++              FREE(parser, dtd->scaffold);
++              dtd->scaffSize = 0;
++            }
++#endif
+             XML_Content *model = build_model(parser);
+             if (! model)
+               return XML_ERROR_NO_MEMORY;

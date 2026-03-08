@@ -21,26 +21,5 @@ int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
 }
 EOF
 
-patch -p1 -d "$FUZZER/repo" << EOF
---- a/utils/aflpp_driver/aflpp_driver.c
-+++ b/utils/aflpp_driver/aflpp_driver.c
-@@ -53,7 +53,7 @@
-   #include "hash.h"
- #endif
- 
--int                   __afl_sharedmem_fuzzing = 1;
-+int                   __afl_sharedmem_fuzzing = 0;
- extern unsigned int * __afl_fuzz_len;
- extern unsigned char *__afl_fuzz_ptr;
- 
-@@ -111,7 +111,8 @@ extern unsigned int * __afl_fuzz_len;
- __attribute__((weak)) int LLVMFuzzerInitialize(int *argc, char ***argv);
- 
- // Notify AFL about persistent mode.
--static volatile char AFL_PERSISTENT[] = "##SIG_AFL_PERSISTENT##";
-+// DISABLED to avoid afl-showmap misbehavior
-+static volatile char AFL_PERSISTENT[] = "##SIG_AFL_NOT_PERSISTENT##";
- int                  __afl_persistent_loop(unsigned int);
- 
- // Notify AFL about deferred forkserver.
-EOF
+# Keep shared memory fuzzing and persistent mode enabled (AFL++ defaults).
+# The driver uses __afl_fuzz_ptr for fast shmem-based input delivery.

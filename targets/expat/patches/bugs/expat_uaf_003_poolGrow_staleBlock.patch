@@ -1,0 +1,38 @@
+From: UAF Injection Patch 003
+Subject: [PATCH] UAF in xmlparse.c: freed STRING_POOL BLOCK written via pool->start in storeAtts
+
+Vulnerability type : Use-After-Free
+File               : expat/lib/xmlparse.c
+Function           : poolGrow
+
+--- a/expat/lib/xmlparse.c
++++ b/expat/lib/xmlparse.c
+@@ -7388,5 +7388,27 @@ poolGrow(STRING_POOL *pool) {
+   } else {
+     BLOCK *tem;
+     int blockSize = (int)(pool->end - pool->start);
++    /*
++     * BUG INJECTION (UAF-003):
++     * When the current block has exactly 32 XML_Chars of used content,
++     * free() the backing BLOCK before growing.  The caller's cached
++     * pointer to pool->start (e.g. in storeAtts) becomes dangling.
++     *
++     * Trigger: attribute value length == 32 XML_Chars when poolGrow fires.
++     */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("EXPUAF03", pool->start != NULL && (pool->ptr - pool->start) == 32);
++#endif
++    if (pool->start != NULL &&
++        (pool->ptr - pool->start) == 32) {
++      BLOCK *stale = (BLOCK *)((char *)pool->start
++                               - offsetof(BLOCK, s));
++      /* Remove from blocks list to avoid double-free in poolClear */
++      pool->blocks = stale->next;
++      /* Free the backing storage */
++      pool->mem->free_fcn(stale);
++    }
++#endif
+     size_t bytesToAllocate;
+
+     if (blockSize < 0) {

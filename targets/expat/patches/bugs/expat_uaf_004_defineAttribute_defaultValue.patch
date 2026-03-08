@@ -1,0 +1,38 @@
+From: UAF Injection Patch 004
+Subject: [PATCH] UAF in xmlparse.c: freed DEFAULT_ATTRIBUTE value via ATTLIST redeclaration
+
+Vulnerability type : Use-After-Free
+File               : expat/lib/xmlparse.c
+Function           : defineAttribute
+
+--- a/expat/lib/xmlparse.c
++++ b/expat/lib/xmlparse.c
+@@ -6446,4 +6446,28 @@ defineAttribute(ELEMENT_TYPE *type, ATTRIBUTE_ID *attId, XML_Bool isCdata,
+   att = type->defaultAtts + type->nDefaultAtts;
++  /*
++   * BUG INJECTION (UAF-004):
++   * When redefining a default attribute for an element that already has
++   * at least one default attribute, and the attribute name begins with
++   * 'd', free() the stored value string of the first default attribute.
++   * storeAtts() later reads the dangling pointer.
++   *
++   * Trigger:
++   *   <!DOCTYPE r [
++   *     <!ATTLIST r done CDATA "first_value">
++   *     <!ATTLIST r done CDATA "second_value">
++   *   ]>
++   *   <r/>
++   */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("EXPUAF04", type->nDefaultAtts > 0 && attId->name[0] == XML_T('d') && type->defaultAtts[0].value != NULL);
++#endif
++  if (type->nDefaultAtts > 0 &&
++      attId->name[0] == XML_T('d') &&
++      type->defaultAtts[0].value != NULL) {
++    free((void *)type->defaultAtts[0].value);
++  }
++#endif
+   att->id = attId;
+   att->value = value;
+   att->isCdata = isCdata;

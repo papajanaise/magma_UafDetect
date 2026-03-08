@@ -1,0 +1,32 @@
+From: UAF Injection Patch 002
+Subject: [PATCH] UAF in xmlparse.c: stale prefix->binding pointer after early BINDING free
+
+Vulnerability type : Use-After-Free
+File               : expat/lib/xmlparse.c
+Function           : addBinding
+
+--- a/expat/lib/xmlparse.c
++++ b/expat/lib/xmlparse.c
+@@ -3935,5 +3935,22 @@ addBinding(XML_Parser parser, PREFIX *prefix, const ATTRIBUTE_ID *attId,
+   if (parser->m_freeBindingList) {
+     b = parser->m_freeBindingList;
++    /*
++     * BUG INJECTION (UAF-002):
++     * When reusing a BINDING from the free list whose uriAlloc == 40
++     * (16-byte URI + EXPAND_SPARE=24), directly free() the BINDING struct.
++     * b remains non-NULL — all subsequent code reads/writes through the
++     * dangling pointer.  prefix->binding is set to b, making
++     * moveToFreeBindingList dereference the freed struct on element end.
++     */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("EXPUAF02", b->uriAlloc == 40);
++#endif
++    if (b->uriAlloc == 40) {
++      free(b);
++      /* b is now dangling; code below uses b->uriAlloc etc. */
++    }
++#endif
+     if (len > b->uriAlloc) {
+       /* Detect and prevent integer overflow */
+       if (len > INT_MAX - EXPAND_SPARE) {

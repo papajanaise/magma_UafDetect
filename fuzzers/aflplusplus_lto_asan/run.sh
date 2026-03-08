@@ -10,31 +10,66 @@
 # - env ARGS: extra arguments to pass to the program
 # - env FUZZARGS: extra arguments to pass to the fuzzer
 ##
-echo "Using local aflplusplus_lto_asan run.sh123"
-
+echo "Using local aflplusplus_lto_asan run.sh"
 
 mkdir -p "$SHARED/findings"
 
-#flag_cmplog=(-m none -c "$OUT/cmplog/$PROGRAM")
-
 export AFL_SKIP_CPUFREQ=1
 export AFL_NO_AFFINITY=1
-#export AFL_NO_UI=1
-export AFL_MAP_SIZE=10000000
-export AFL_DRIVER_DONT_DEFER=1
-export AFL_LLVM_CMPLOG="$OUT/cmplog/$PROGRAM"
-export ASAN_OPTIONS="use_sigaltstack=0:allocator_may_return_null=1:abort_on_error=1:symbolize=0" 
-unset AFL_CMPLOG
+export ASAN_OPTIONS="abort_on_error=1:detect_leaks=0:malloc_context_size=0:symbolize=0:allocator_may_return_null=1:use_sigaltstack=0"
+
+# Derive TARGET_NAME from $TARGET path
+TARGET_NAME="$(basename "$TARGET")"
 
 echo "PROGRAM=$PROGRAM"
 echo "ARGS=$ARGS"
 echo "FUZZARGS=$FUZZARGS"
+echo "TARGET_NAME=$TARGET_NAME"
+echo "CMPLOG=$OUT/cmplog/$PROGRAM"
+
+# Persistent mode detection: libFuzzer-style harnesses have a weak main
+# symbol from aflpp_driver → must feed via stdin ("-")
+if nm "$OUT/afl/$PROGRAM" 2>/dev/null | grep -qE '^[0-9a-f]+\s+W\s+main$'; then
+    echo "Persistent mode detected (weak main), setting ARGS=-"
+    ARGS="-"
+fi
 
 if [ "$TARGET_NAME" == "libpng" ]; then
     export FUZZARGS="$FUZZARGS -x $FUZZER/repo/dictionaries/png.dict"
 fi
 
-"$FUZZER/repo/afl-fuzz" -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" -d \
-    $FUZZARGS -- "$OUT/afl/$PROGRAM" $ARGS 2>&1 | tee $SHARED/log/afl_output.log
+if [ "$TARGET_NAME" == "expat" ]; then
+    export FUZZARGS="$FUZZARGS -x $FUZZER/repo/dictionaries/xml.dict"
+fi
 
-    #"${flag_cmplog[@]}"
+if [ "$TARGET_NAME" == "libjpeg-turbo" ]; then
+    export FUZZARGS="$FUZZARGS -x $FUZZER/repo/dictionaries/jpeg.dict"
+fi
+
+# CmpLog — verify the path exists before enabling
+flag_cmplog=()
+cmplog_binary=""
+for candidate in \
+    "$OUT/cmplog/$PROGRAM"; do
+    if [ -f "$candidate" ]; then
+        cmplog_binary="$candidate"
+        break
+    fi
+done
+
+
+if [ -n "$cmplog_binary" ]; then
+    flag_cmplog=(-c "$cmplog_binary")
+    echo "CmpLog enabled: $cmplog_binary"
+else
+    echo "WARNING: No CmpLog binary found, comparison solving disabled"
+fi
+
+# Verify corpus
+corpus_dir="$TARGET/corpus/$PROGRAM"
+if [ ! -d "$corpus_dir" ] || [ -z "$(ls -A "$corpus_dir" 2>/dev/null)" ]; then
+    echo "WARNING: Corpus dir empty or missing: $corpus_dir"
+fi
+
+"$FUZZER/repo/afl-fuzz" -M main -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
+    "${flag_cmplog[@]}" $FUZZARGS -- "$OUT/afl/$PROGRAM" $ARGS 2>&1 | tee $SHARED/log/afl_output.log
