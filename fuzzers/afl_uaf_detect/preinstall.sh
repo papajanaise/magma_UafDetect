@@ -2,7 +2,7 @@
 set -e
 
 apt-get update && \
-    apt-get install -y make cmake build-essential git wget libexpat1-dev
+    apt-get install -y make cmake build-essential git wget libexpat1-dev gdb
 
 apt-get install -y apt-utils apt-transport-https ca-certificates gnupg
 
