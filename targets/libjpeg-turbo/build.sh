@@ -20,6 +20,10 @@ set -e
 
 cd "$TARGET/repo"
 
+# Reset file timestamps to avoid autotools "file is older than distributed files"
+# clock-skew errors inside Singularity containers.
+find . -exec touch {} +
+
 # Create an isolated build directory to avoid polluting the source tree.
 mkdir -p build && cd build
 
@@ -39,7 +43,7 @@ cmake .. \
     -DCMAKE_BUILD_TYPE=Release
 
 # Build only the libraries (skip CLI tools to speed up the build).
-make -j"$(nproc)" jpeg turbojpeg
+make -j"$(nproc)" jpeg-static turbojpeg-static
 
 # -------------------------------------------------------------------------
 # Build the fuzzer harness.
@@ -57,7 +61,7 @@ make -j"$(nproc)" jpeg turbojpeg
 INCLUDES="-I$TARGET/repo -I$TARGET/repo/build"
 
 $CXX $CXXFLAGS $INCLUDES \
-    "$TARGET/repo/fuzz/libjpeg_turbo_fuzzer.cc" \
+    "$TARGET/repo/fuzz/decompress.cc" \
     "$OUT/magma.o" \
     "$TARGET/repo/build/libjpeg.a" \
     "$TARGET/repo/build/libturbojpeg.a" \

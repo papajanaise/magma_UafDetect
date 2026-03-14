@@ -15,16 +15,13 @@ echo "Using local aflplusplus_lto_asan run.sh123"
 
 mkdir -p "$SHARED/findings"
 
-#flag_cmplog=(-m none -c "$OUT/cmplog/$PROGRAM")
+flag_cmplog=(-c "$OUT/cmplog/$PROGRAM")
 
 export AFL_SKIP_CPUFREQ=1
 export AFL_NO_AFFINITY=1
 #export AFL_NO_UI=1
-export AFL_MAP_SIZE=10000000
 export AFL_DRIVER_DONT_DEFER=1
-export AFL_LLVM_CMPLOG="$OUT/cmplog/$PROGRAM"
-export ASAN_OPTIONS="use_sigaltstack=0:allocator_may_return_null=1:abort_on_error=1:symbolize=0" 
-unset AFL_CMPLOG
+export ASAN_OPTIONS="use_sigaltstack=0:allocator_may_return_null=1:abort_on_error=1:symbolize=0"
 
 echo "PROGRAM=$PROGRAM"
 echo "ARGS=$ARGS"
@@ -34,7 +31,10 @@ if [ "$TARGET_NAME" == "libpng" ]; then
     export FUZZARGS="$FUZZARGS -x $FUZZER/repo/dictionaries/png.dict"
 fi
 
-"$FUZZER/repo/afl-fuzz" -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" -d \
-    $FUZZARGS -- "$OUT/afl/$PROGRAM" $ARGS 2>&1 | tee $SHARED/log/afl_output.log
+if [ "$TARGET_NAME" == "expat" ]; then
+    export FUZZARGS="$FUZZARGS -x $FUZZER/repo/dictionaries/xml.dict"
+fi
 
-    #"${flag_cmplog[@]}"
+"$FUZZER/repo/afl-fuzz" -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
+    "${flag_cmplog[@]}" \
+    $FUZZARGS -- "$OUT/afl/$PROGRAM" $ARGS 2>&1 | tee $SHARED/log/afl_output.log

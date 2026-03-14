@@ -6,10 +6,7 @@
 # - env FUZZER: path to fuzzer work dir
 ##
 
-#git clone --no-checkout https://github.com/papajanaise/AFLplusplus_UafDetect "$FUZZER/repo"
-#git -C "$FUZZER/repo" checkout 17cbfec36f06ea315f1d9b0becf66ff7c9653597
-#wget -O "$FUZZER/repo/afl_driver.cpp" \
-#    "https://cs.chromium.org/codesearch/f/chromium/src/third_party/libFuzzer/src/afl/afl_driver.cpp"
+#git clone --branch upgrade_afl_version https://github.com/papajanaise/AFLplusplus_UafDetect.git "$FUZZER/repo"
 
 
 # Fix: CMake-based build systems fail with duplicate (of main) or undefined references (of LLVMFuzzerTestOneInput)

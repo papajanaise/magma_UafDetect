@@ -37,6 +37,7 @@ fi
     export LDFLAGS="$LDFLAGS -L$OUT"
 
     "$MAGMA/build.sh"
+    echo "Done building magma.\n"
     "$TARGET/build.sh"
 )
 
@@ -50,6 +51,7 @@ fi
     export AFL_LLVM_CMPLOG=1
 
     "$MAGMA/build.sh"
+    echo "Done building magma.\n"
     "$TARGET/build.sh"
 )
 
