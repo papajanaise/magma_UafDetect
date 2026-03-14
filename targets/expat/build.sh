@@ -15,6 +15,10 @@ cd "$TARGET/repo/expat"
 # --- configure & build libexpat as a static library ---
 ./buildconf.sh
 
+# Reset timestamps to avoid clock-skew errors in Singularity containers.
+# Must run after buildconf.sh/autoreconf so generated files are also touched.
+find . -exec touch {} +
+
 ./configure \
     CC="$CC" \
     CXX="$CXX" \
@@ -31,19 +35,30 @@ make -j"$(nproc)" install
 LIB_DIR="$TARGET/install/lib"
 INC_DIR="$TARGET/install/include"
 
-# --- compile the fuzzer harness ---
-# libexpat ships its own OSS-Fuzz harness under fuzz/xml.c (or xmlparse_fuzzer.c)
-# depending on version; adapt path as needed.
-FUZZ_SRC="$TARGET/repo/expat/fuzz/xml.c"
-if [ ! -f "$FUZZ_SRC" ]; then
-    FUZZ_SRC="$TARGET/repo/expat/fuzz/xmlparse_fuzzer.cc"
-fi
+# --- compile one fuzzer binary per encoding, matching the corpus layout ---
+# Encodings mirror the corpus subdirectory names: xml_parse_fuzzer_<ENC>
+ENCODINGS=(UTF-8 UTF-16 UTF-16BE UTF-16LE ISO-8859-1 US-ASCII)
 
-$CC $CFLAGS \
-    -I"$INC_DIR" \
-    "$FUZZ_SRC" \
-    -o "$OUT/expat_fuzzer" \
-    $LDFLAGS \
-    -L"$LIB_DIR" -lexpat \
-    $LIBS \
-    -lm
+for ENC in "${ENCODINGS[@]}"; do
+    $CC $CFLAGS \
+        -DENCODING_FOR_FUZZING="$ENC" \
+        -I"$INC_DIR" \
+        -I"$TARGET/repo/expat/lib" \
+        "$TARGET/repo/expat/fuzz/xml_parse_fuzzer.c" \
+        -o "$OUT/xml_parse_fuzzer_${ENC}" \
+        $LDFLAGS \
+        -L"$LIB_DIR" -lexpat \
+        $LIBS \
+        -lm
+
+    $CC $CFLAGS \
+        -DENCODING_FOR_FUZZING="$ENC" \
+        -I"$INC_DIR" \
+        -I"$TARGET/repo/expat/lib" \
+        "$TARGET/repo/expat/fuzz/xml_parsebuffer_fuzzer.c" \
+        -o "$OUT/xml_parsebuffer_fuzzer_${ENC}" \
+        $LDFLAGS \
+        -L"$LIB_DIR" -lexpat \
+        $LIBS \
+        -lm
+done

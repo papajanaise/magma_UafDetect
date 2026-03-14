@@ -1,0 +1,1 @@
+<!DOCTYPE r [<!ENTITY % cond 'INCLUDE'>]><![%cond;[<!ELEMENT r ANY>]]><r/>

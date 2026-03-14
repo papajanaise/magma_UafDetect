@@ -1,0 +1,1 @@
+<?xml version="1.0"?><soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Header/><soap:Body><m:GetPrice xmlns:m="http://example.com/prices"><m:Item>Apples</m:Item></m:GetPrice></soap:Body></soap:Envelope>
