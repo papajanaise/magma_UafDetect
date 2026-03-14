@@ -1,0 +1,140 @@
+Bootstrap: docker
+From: ubuntu:22.04
+
+# ---------------------------------------------------------------------------
+# Copy the entire magma source tree into the image.
+# %files does not support variable paths, so we copy everything once and
+# navigate it with shell variables in %post.
+# Build from the root of your magma directory:
+#   sudo singularity build magma.sif magma.def \
+#     --env FUZZER_NAME=afl --env TARGET_NAME=libpng
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Runtime environment (equivalent to Docker ENV).
+# Variables passed via --env at build time are available here at runtime.
+# ---------------------------------------------------------------------------
+%environment
+    export MAGMA_R=/magma
+    export OUT=/magma_out
+    export SHARED=/magma_shared
+
+    # Toolchain
+    export CC=/usr/bin/gcc
+    export CXX=/usr/bin/g++
+    export LD=/usr/bin/ld
+    export AR=/usr/bin/ar
+    export AS=/usr/bin/as
+    export NM=/usr/bin/nm
+    export RANLIB=/usr/bin/ranlib
+
+    # Path variables — fall back to defaults if not set at build time
+    export MAGMA_PATH="${MAGMA_PATH:-magma}"
+    export FUZZER_NAME="afl_uaf_detect"
+    export TARGET_NAME="expat"
+    export MAGMA="/magma/${MAGMA_PATH}"
+    export FUZZER="/magma/fuzzers/${FUZZER_NAME}"
+    export TARGET="/magma/targets/${TARGET_NAME}"
+
+    # Conditional compilation flags
+    ISAN_FLAG=""
+    HARDEN_FLAG=""
+    CANARIES_FLAG=""
+    FIXES_FLAG=""
+    [ -n "${ISAN}"     ] && ISAN_FLAG="-DMAGMA_FATAL_CANARIES"
+    [ -n "${HARDEN}"   ] && HARDEN_FLAG="-DMAGMA_HARDEN_CANARIES"
+    [ -n "${CANARIES}" ] && CANARIES_FLAG="-DMAGMA_ENABLE_CANARIES"
+    [ -n "${FIXES}"    ] && FIXES_FLAG="-DMAGMA_ENABLE_FIXES"
+
+    BUILD_FLAGS="-include /magma/${MAGMA_PATH}/src/canary.h \
+        ${CANARIES_FLAG} ${FIXES_FLAG} ${ISAN_FLAG} ${HARDEN_FLAG} -g -O0"
+
+    export CFLAGS="${BUILD_FLAGS}"
+    export CXXFLAGS="${BUILD_FLAGS}"
+    export LIBS="-l:magma.o -lrt"
+    export LDFLAGS="-L/magma_out -g"
+
+# ---------------------------------------------------------------------------
+# Build steps. Everything runs as root in Singularity.
+# Pass fuzzer/target via --env at build time:
+#   --env FUZZER_NAME=afl --env TARGET_NAME=libpng
+# ---------------------------------------------------------------------------
+%post
+    # ---- Resolve variables with defaults ----
+    MAGMA_R=/magma
+    OUT=/magma_out
+    SHARED=/magma_shared
+    USER_ID="${USER_ID:-1000}"
+    GROUP_ID="${GROUP_ID:-1000}"
+    MAGMA_PATH="${MAGMA_PATH:-magma}"
+    FUZZER_NAME="afl_uaf_detect"
+    TARGET_NAME="expat"
+    FUZZER_PATH="fuzzers/${FUZZER_NAME}"
+    TARGET_PATH="targets/${TARGET_NAME}"
+    MAGMA="${MAGMA_R}/${MAGMA_PATH}"
+    FUZZER="${MAGMA_R}/${FUZZER_PATH}"
+    TARGET="${MAGMA_R}/${TARGET_PATH}"
+
+    echo "DEBUG UID=${USER_ID} GID=${GROUP_ID}"
+    echo "DEBUG FUZZER=${FUZZER} TARGET=${TARGET}"
+
+    # ---- Base packages ----
+    # NOTE: sudo is installed to match the original image, but the Dockerfile
+    # itself contains a TODO to remove it.
+    apt-get update && apt-get install -y sudo git unzip wget
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # ---- cmake 3.23 (apt ships 3.22.x on jammy) ----
+    CMAKE_VERSION="3.23.5"
+    wget -q "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.sh" \
+        -O /tmp/cmake-install.sh
+    chmod +x /tmp/cmake-install.sh
+    /tmp/cmake-install.sh --skip-license --prefix=/usr/local
+    rm /tmp/cmake-install.sh
+
+    # ---- Create 'magma' user and group ----
+    mkdir -p /home
+    groupadd -g "${GROUP_ID}" magma
+    useradd -l -u "${USER_ID}" -K UMASK=0000 -d /home -g magma magma
+    chown magma:magma /home
+    echo "magma:amgam" | chpasswd
+    usermod -a -G sudo magma
+
+    # ---- Shared / output directories ----
+    mkdir -p "${SHARED}" "${OUT}"
+    # FIX: The original Dockerfile references ${USERNAME} which is never
+    # defined and would cause a build failure. Using 'magma' explicitly instead.
+    chown "magma:${GROUP_ID}" "${SHARED}" "${OUT}"
+    chmod 2775 "${SHARED}" "${OUT}"
+
+    # ---- Clone source tree ----
+    git clone https://github.com/papajanaise/magma_UafDetect /magma_src
+
+    # ---- Magma directory + preinstall ----
+    mkdir -p "${MAGMA}"
+    cp -r /magma_src/${MAGMA_PATH}/. "${MAGMA}/"
+    chown -R magma:magma "${MAGMA}"
+    chmod +x "${MAGMA}/preinstall.sh"
+    "${MAGMA}/preinstall.sh"
+
+    # ---- Fuzzer directory + preinstall ----
+    mkdir -p "${FUZZER}"
+    cp -r /magma_src/${FUZZER_PATH}/. "${FUZZER}/"
+    chown -R magma:magma "${FUZZER}"
+    chmod +x "${FUZZER}/preinstall.sh"
+    "${FUZZER}/preinstall.sh"
+
+    # ---- Target directory + preinstall ----
+    mkdir -p "${TARGET}"
+    cp -r /magma_src/${TARGET_PATH}/. "${TARGET}/"
+    chown -R magma:magma "${TARGET}"
+    chmod +x "${TARGET}/preinstall.sh"
+    "${TARGET}/preinstall.sh"
+
+    # ---- Clean up source tree ----
+    rm -rf /magma_src
+
+# ---------------------------------------------------------------------------
+# Default action when the container is run (equivalent to Docker CMD).
+# ---------------------------------------------------------------------------
+%runscript
+    exec /bin/bash "$@"
