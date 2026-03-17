@@ -1,0 +1,63 @@
+From: UAF Injection Patch 001
+Subject: [PATCH] UAF in jdmainct.c: stale xbuffer pointer via early free in context mode
+
+Vulnerability type : Use-After-Free
+File               : jdmainct.c
+Function           : process_data_context_main / alloc_funny_pointers
+Trigger            : Grayscale or YCbCr JPEG with restart_interval > 0
+                     AND image_width divisible by 64
+                     AND image processed in context mode (v_samp_factor > 1)
+Difficulty         : Medium — AFL++ must craft valid DRI + SOF markers
+                     with the right width and sampling factors; the free
+                     happens on the FIRST iMCU row, use is on the SECOND.
+
+The injection adds a conditional free() of xbuffer[0] inside
+alloc_funny_pointers() when the above trigger is satisfied.
+process_data_context_main() then dereferences the freed rows via
+main->xbuffer[main->whichptr] on the next iMCU row.
+
+The memory_pool backing the buffer is still live, so the region may
+be reused by subsequent alloc_small calls, making this a classic
+heap UAF that sanitisers and page-granularity tools will catch.
+
+Adapted for libjpeg-turbo 2.1.3: uses cinfo->_min_DCT_scaled_size
+(underscore-prefixed field name in this version) and JSAMPIMAGE
+(the actual type of xbuffer[0] in 2.1.3).
+
+--- a/jdmainct.c
++++ b/jdmainct.c
+@@ -19,6 +19,7 @@
+ #include "jinclude.h"
+ #include "jdmainct.h"
+ #include "jconfigint.h"
++#include <stdlib.h>
+ 
+ 
+ /*
+@@ -164,6 +165,26 @@ alloc_funny_pointers(j_decompress_ptr cinfo)
+     xbuf += rgroup * (M + 4);
+     main_ptr->xbuffer[1][ci] = xbuf;
+   }
++
++  /*
++   * BUG INJECTION (UAF-001):
++   * When a restart interval is set and the image width is a multiple of 64,
++   * speculatively release xbuffer[0] assuming it will be rebuilt per-MCU.
++   * In practice it is NOT rebuilt; process_data_context_main continues to
++   * index into the freed rows via main->xbuffer[main->whichptr].
++   */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("JPGUAF01", cinfo->restart_interval > 0 && (cinfo->image_width & 63) == 0 && cinfo->_min_DCT_scaled_size > 1);
++#endif
++  if (cinfo->restart_interval > 0 &&
++      (cinfo->image_width & 63) == 0 &&
++      cinfo->_min_DCT_scaled_size > 1) {
++    /* free the backing row-pointer array; pool allocator does not track this */
++    free(main_ptr->xbuffer[0]);
++    /* pointer is NOT nulled — dangling reference remains in xbuffer[0] */
++  }
++#endif
+ }
+ 
+ 

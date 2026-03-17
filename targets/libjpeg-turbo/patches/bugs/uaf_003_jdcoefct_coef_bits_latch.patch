@@ -1,0 +1,68 @@
+From: UAF Injection Patch 003
+Subject: [PATCH] UAF in jdcoefct.c: freed coef_bits_latch on progressive refinement scan
+
+Vulnerability type : Use-After-Free
+File               : jdcoefct.c
+Function           : start_input_pass  /  decompress_data
+Trigger            : Progressive JPEG with at least two scans where:
+                       - First scan:  Ss=0, Se=0, Ah=0, Al=0  (DC-only baseline)
+                       - Second scan: Ss=0, Se=0, Ah=1, Al=0  (DC refinement)
+                     This is a well-formed progressive JPEG; AFL++ discovers
+                     the Ah=1 byte in the SOS marker.
+Difficulty         : Medium — requires a two-scan progressive structure.
+                     AFL++ needs to preserve a valid first SOS then mutate
+                     the second SOS Ah/Al byte to reach the free.  The UAF
+                     is read-oriented (the latch array is read), so it may
+                     show up as a heap-use-after-free in ASan.
+
+The injection: in start_input_pass(), when processing a refinement scan
+(cinfo->Ah > 0), free() the coef_bits_latch array that was allocated for
+the first scan.  decompress_data() subsequently reads the latch contents
+for every coefficient block it processes, triggering the UAF.
+
+Adapted for libjpeg-turbo 2.1.3: start_input_pass() in this version is
+a stub that only sets input_iMCU_row. The patch expands it to allocate
+coef_bits_latch (mirroring smoothing_ok()'s allocation) and then
+conditionally frees it on refinement scans.
+
+--- a/jdcoefct.c
++++ b/jdcoefct.c
+@@ -22,6 +22,7 @@
+ #include "jinclude.h"
+ #include "jdcoefct.h"
+ #include "jpegcomp.h"
++#include <stdlib.h>
+ 
+ 
+ /* Forward declarations */
+@@ -44,6 +45,30 @@ METHODDEF(int) decompress_smooth_data(j_decompress_ptr cinfo,
+ METHODDEF(void)
+ start_input_pass(j_decompress_ptr cinfo)
+ {
++#ifndef MAGMA_ENABLE_FIXES
++  /*
++   * BUG INJECTION (UAF-003):
++   * On a DC refinement scan (Ah > 0, Ss == 0), prematurely free the latch
++   * array to "reset" approximation state.  The pointer in coef->coef_bits_latch
++   * is NOT cleared, so decompress_data() reads and writes the freed region
++   * for every MCU in the scan.
++   *
++   * Trigger: second (or later) SOS marker with Ah != 0 and Ss == 0.
++   */
++  if (cinfo->Ah > 0 && cinfo->Ss == 0) {
++    my_coef_ptr coef = (my_coef_ptr)cinfo->coef;
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("JPGUAF03", coef->coef_bits_latch != NULL);
++#endif
++    if (coef->coef_bits_latch != NULL) {
++      /* Free via stdlib — pool allocator does NOT see this deallocation.
++       * coef->coef_bits_latch is left pointing at the freed block. */
++      free(coef->coef_bits_latch);
++      /* intentionally NOT: coef->coef_bits_latch = NULL; */
++    }
++  }
++#endif
++
+   cinfo->input_iMCU_row = 0;
+   start_iMCU_row(cinfo);
+ }

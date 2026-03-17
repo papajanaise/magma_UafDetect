@@ -1,0 +1,86 @@
+From: UAF Injection Patch 005
+Subject: [PATCH] UAF in turbojpeg.c: freed dinfo struct accessed in setjmp error path
+
+Vulnerability type : Use-After-Free
+File               : turbojpeg.c
+Function           : tjDecompress2
+Trigger            : A JPEG whose SOI marker is immediately followed by an
+                     APP0/JFIF marker (FF E0) where the JFIF APP0 payload
+                     encodes a non-zero Xthumbnail dimension (byte offset 18
+                     from the buffer start) of exactly 1, AND the total
+                     byte-count of the input buffer (jpegSize) is between
+                     128 and 255 inclusive.
+                     AFL++ must mutate the Xthumbnail byte inside the APP0
+                     block and keep the buffer in the required size range.
+Difficulty         : Medium — the Xthumbnail byte at offset 18 is inside a
+                     parsed marker field, not a trivially-visible header word.
+                     AFL++ must reach and flip that specific byte while keeping
+                     jpegSize in the narrower [128, 255] window.  The UAF is
+                     triggered inside the longjmp error recovery path, making
+                     it a temporal UAF (free then read within the same stack
+                     unwind) that ASan will flag.
+
+The injection: a new pre-check block in tjDecompress2() detects the trigger
+condition before jpeg_read_header().  It calls jpeg_destroy_decompress()
+(which frees the dinfo backing store) but then falls through into the
+normal setjmp error handler that dereferences dinfo members — specifically
+handle->jerr.num_warnings and the jpeg_decompress_struct itself.
+
+Adapted for libjpeg-turbo 2.1.3: applied to tjDecompress2() (the 2.1.3
+API; tj3Decompress2 does not exist in this version).  The trigger block
+is inserted before the first setjmp since jpeg_mem_src_tj() is called
+inside the setjmp-protected region in this version.
+
+--- a/turbojpeg.c
++++ b/turbojpeg.c
+@@ -1297,6 +1297,7 @@ DLLEXPORT int tjDecompress2(tjhandle handle, const unsigned char *jpegBuf,
+   JSAMPROW *row_pointer = NULL;
+   int i, retval = 0, jpegwidth, jpegheight, scaledw, scaledh;
+   struct my_progress_mgr progress;
++  int _uaf_triggered = 0;  /* injection state flag */
+ 
+   GET_DINSTANCE(handle);
+   this->jerr.stopOnWarning = (flags & TJFLAG_STOPONWARNING) ? TRUE : FALSE;
+@@ -1321,7 +1322,33 @@ DLLEXPORT int tjDecompress2(tjhandle handle, const unsigned char *jpegBuf,
+   } else
+     dinfo->progress = NULL;
+ 
++  /*
++   * BUG INJECTION (UAF-005):
++   * Inspect the first APP0 marker bytes inline before jpeg_read_header().
++   * If the raw stream looks like a JFIF APP0 (0xFF 0xE0) where the Xthumbnail
++   * field (byte offset 18 from buffer start, inside the APP0 payload) equals 1
++   * AND jpegSize is in [128, 255], call jpeg_destroy_decompress() to tear down
++   * the dinfo struct, then let execution fall into the setjmp-guarded section
++   * which reads dinfo members — use-after-free.
++   */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("JPGUAF05", jpegSize >= 128 && jpegSize <= 255 && jpegBuf[2] == 0xFF && jpegBuf[3] == 0xE0 && jpegBuf[18] == 0x01);
++#endif
++  if (jpegSize >= 128 && jpegSize <= 255 &&
++      jpegBuf[2] == 0xFF && jpegBuf[3] == 0xE0 &&
++      jpegBuf[18] == 0x01) {
++    jpeg_destroy_decompress(dinfo);
++    _uaf_triggered = 1;
++    /* Do NOT return — fall through so the bailout path reads freed dinfo. */
++  }
++#endif
++
+   if (setjmp(this->jerr.setjmp_buffer)) {
++    /* UAF-005: if _uaf_triggered, dinfo was already destroyed;
++     * reading this->jerr.pub.num_warnings here is use-after-free. */
++    if (_uaf_triggered && this->jerr.pub.num_warnings > 0)
++      ; /* access freed jerr member — UAF read */
+     /* If we get here, the JPEG code has signaled an error. */
+     retval = -1;  goto bailout;
+   }
+@@ -1369,6 +1390,8 @@ DLLEXPORT int tjDecompress2(tjhandle handle, const unsigned char *jpegBuf,
+   jpeg_finish_decompress(dinfo);
+ 
+ bailout:
++  /* UAF-005: if _uaf_triggered, dinfo->global_state itself is freed memory;
++   * this conditional read is a second UAF site in the cleanup path. */
+   if (dinfo->global_state > DSTATE_START) jpeg_abort_decompress(dinfo);
+   free(row_pointer);
+   if (this->jerr.warning) retval = -1;

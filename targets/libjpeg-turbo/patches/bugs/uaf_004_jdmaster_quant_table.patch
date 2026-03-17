@@ -1,0 +1,66 @@
+From: UAF Injection Patch 004
+Subject: [PATCH] UAF in jdmaster.c: freed JQUANT_TBL via stale compptr->quant_table
+
+Vulnerability type : Use-After-Free
+File               : jdmaster.c
+Function           : prepare_for_output_pass  (calls initial_setup internals)
+Trigger            : JPEG where a quantization table's first quantval entry
+                     (zigzag index 0, the DC base coefficient) equals 0x01
+                     AND the image has exactly 3 components (YCbCr)
+                     AND both image dimensions are at least 8 pixels.
+                     All conditions are set through standard DQT + SOF markers.
+Difficulty         : Medium-high — AFL++ must independently mutate the DQT
+                     quantval[0] byte to 0x01 while preserving a valid SOF
+                     with num_components=3 and image_width/height >= 8.
+                     Three separate marker fields must cooperate, and tiny
+                     synthetic seeds (1×1, 2×2, etc.) will not trigger.
+
+The injection: in prepare_for_output_pass(), after the entropy decoder
+is initialised, free() the JQUANT_TBL for component 0 when the trigger
+is hit.  cinfo->comp_info[ci].quant_table still holds the old pointer.
+The inverse-DCT routine (jidctfst.c / jidctflt.c) dereferences
+compptr->quant_table->quantval[] for every DCT block, causing UAF.
+
+--- a/jdmaster.c
++++ b/jdmaster.c
+@@ -22,6 +22,7 @@
+ #include "jpeglib.h"
+ #include "jpegcomp.h"
+ #include "jdmaster.h"
++#include <stdlib.h>
+ 
+ 
+ /*
+@@ -634,6 +635,32 @@ prepare_for_output_pass(j_decompress_ptr cinfo)
+       }
+     }
+     (*cinfo->idct->start_pass) (cinfo);
++
++    /*
++     * BUG INJECTION (UAF-004):
++     * If the DC quantization step (quantval[0]) for component 0 is exactly 1,
++     * the image has 3 components, and both dimensions are at least 8 pixels,
++     * free() the JQUANT_TBL directly.  compptr->quant_table still holds the
++     * old pointer; the IDCT routine dereferences compptr->quant_table->quantval[]
++     * for every DCT block, causing use-after-free.
++     */
++    {
++      jpeg_component_info *compptr = &cinfo->comp_info[0];
++      JQUANT_TBL *qtbl = compptr->quant_table;
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++      MAGMA_LOG("JPGUAF04", cinfo->num_components == 3 && cinfo->image_width >= 8 && cinfo->image_height >= 8 && qtbl != NULL && qtbl->quantval[0] == 1);
++#endif
++      if (cinfo->num_components == 3 &&
++          cinfo->image_width >= 8 && cinfo->image_height >= 8 &&
++          qtbl != NULL &&
++          qtbl->quantval[0] == 1) {
++        free(qtbl);
++        /* intentionally leave compptr->quant_table un-nulled */
++      }
++#endif
++    }
++
+     (*cinfo->coef->start_output_pass) (cinfo);
+     if (!cinfo->raw_data_out) {
+       if (!master->using_merged_upsample)
