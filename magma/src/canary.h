@@ -12,10 +12,12 @@ extern "C" {
 
 #define MAGMA_LOG(b,c) do{magma_log((b),(int)(c));}while(0)
 #define MAGMA_LOG_V(b,c) (magma_log((b),(int)(c)))
+#define MAGMA_FREE_LOG(b) do{magma_free_log((b));}while(0)
 #define MAGMA_AND(a,b) magma_and((a),(b))
 #define MAGMA_OR(a,b) magma_or((a),(b))
 
 extern void magma_log(const char *bug, int condition);
+extern void magma_free_log(const char *bug);
 
 #ifdef __cplusplus
 }

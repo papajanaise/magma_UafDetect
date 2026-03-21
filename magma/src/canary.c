@@ -95,6 +95,33 @@ fatal: (void)0;
     return;
 }
 
+void magma_free_log(const char *bug)
+{
+#ifndef MAGMA_DISABLE_CANARIES
+    if (!data_ptr && !magma_init()) {
+        return;
+    }
+
+#ifdef MAGMA_HARDEN_CANARIES
+    magma_protect(1);
+#endif
+
+    pcanary_t prod_canary = stor_get(data_ptr->producer_buffer, bug);
+    prod_canary->free_reached += 1 & (magma_faulty ^ 1);
+    if (data_ptr->consumed) {
+        memcpy(data_ptr->consumer_buffer, data_ptr->producer_buffer, sizeof(data_t));
+        // memory barrier
+        __sync_synchronize();
+        data_ptr->consumed = false;
+    }
+
+#ifdef MAGMA_HARDEN_CANARIES
+    magma_protect(0);
+#endif
+#endif
+    return;
+}
+
 #ifdef __cplusplus
 }
 #endif
