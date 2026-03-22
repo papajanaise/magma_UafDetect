@@ -10,6 +10,6 @@ done
 ${FUZZER}/build.sh  #only once per fuzzer
 /magma/magma/apply_patches.sh #only once per target
 ${FUZZER}/build_bc_files.sh  #only for afl_uaf_detect!
-${FUZZER}/svf_instrumentation.sh #only for afl_uaf_detect!
-${FUZZER}/instrument.sh
+${FUZZER}/static_analysis_instrument.sh #only for afl_uaf_detect!
+${FUZZER}/afl_instrument.sh
 /magma/magma/run.sh

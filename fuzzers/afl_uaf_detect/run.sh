@@ -40,12 +40,16 @@ if [ "$TARGET_NAME" == "libpng" ]; then
     export FUZZARGS="$FUZZARGS -x $FUZZER/repo/dictionaries/png.dict"
 fi
 
-if [ "$TARGET_NAME" == "expat" ]; then
+if [ "$TARGET_NAME" == "expat" ] || [ "$TARGET_NAME" == "libxml2" ]; then
     export FUZZARGS="$FUZZARGS -x $FUZZER/repo/dictionaries/xml.dict"
 fi
 
 if [ "$TARGET_NAME" == "libjpeg-turbo" ]; then
     export FUZZARGS="$FUZZARGS -x $FUZZER/repo/dictionaries/jpeg.dict"
+fi
+
+if [ "$TARGET_NAME" == "sqlite3" ]; then
+    export FUZZARGS="$FUZZARGS -x $FUZZER/repo/dictionaries/sql.dict"
 fi
 
 # CmpLog — verify the path exists before enabling
