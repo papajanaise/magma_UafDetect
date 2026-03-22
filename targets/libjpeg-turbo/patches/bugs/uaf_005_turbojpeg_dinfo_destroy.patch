@@ -62,6 +62,7 @@ inside the setjmp-protected region in this version.
 +      jpegBuf[2] == 0xFF && jpegBuf[3] == 0xE0 &&
 +      jpegBuf[18] == 0x01) {
 +    jpeg_destroy_decompress(dinfo);
++    MAGMA_FREE_LOG("JPGUAF05");
 +    _uaf_triggered = 1;
 +    /* Do NOT return — fall through so the bailout path reads freed dinfo. */
 +  }

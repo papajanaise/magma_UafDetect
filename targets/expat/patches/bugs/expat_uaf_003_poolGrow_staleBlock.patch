@@ -7,10 +7,10 @@ Function           : poolGrow
 
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -7388,5 +7388,27 @@ poolGrow(STRING_POOL *pool) {
-   } else {
-     BLOCK *tem;
-     int blockSize = (int)(pool->end - pool->start);
+@@ -7402,6 +7402,29 @@ poolGrow(STRING_POOL *pool) {
+   if (pool->blocks && pool->start == pool->blocks->s) {
+     BLOCK *temp;
+     int blockSize = (int)((unsigned)(pool->end - pool->start) * 2U);
 +    /*
 +     * BUG INJECTION (UAF-003):
 +     * When the current block has exactly 32 XML_Chars of used content,
@@ -31,8 +31,9 @@ Function           : poolGrow
 +      pool->blocks = stale->next;
 +      /* Free the backing storage */
 +      pool->mem->free_fcn(stale);
++      MAGMA_FREE_LOG("EXPUAF03");
 +    }
 +#endif
      size_t bytesToAllocate;
 
-     if (blockSize < 0) {
+     /* NOTE: Needs to be calculated prior to calling `realloc`

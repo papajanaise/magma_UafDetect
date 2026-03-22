@@ -1,3 +1,2 @@
-PROGRAMS=(libjpeg_turbo_fuzzer)
+PROGRAMS=(libjpeg_turbo_fuzzer decompress_yuv_fuzzer transform_fuzzer)
 
-libjpeg_turbo_fuzzer_ARGS="@@"

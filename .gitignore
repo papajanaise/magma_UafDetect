@@ -1,12 +1,11 @@
+targets/openssl/
 fuzzers/afl_uaf_detect/repo/
-targets/openssl/repo/
 targets/libpng/repo/
-targets/sglite3/repo/
+targets/sqlite3/repo/
 targets/libxml2/repo/
-targets/openssl/corpus/
 targets/libpng/corpus/
-targets/sglite3/corpus/
+targets/sqlite3/corpus/
 targets/libxml2/corpus/
 targets/libxml2/corpus_original/
-targets/openssl/crypto/
-targets/openssl/bc_files/
+targets/expat/install/
+targets/sqlite3/work/

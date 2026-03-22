@@ -15,8 +15,10 @@ fi
 
 # build the libpng library
 cd "$TARGET/repo"
+find . -exec touch {} +
 autoreconf -f -i
 ./configure --with-libpng-prefix=MAGMA_ --disable-shared
+find . -exec touch {} +
 make -j$(nproc) clean
 make -j$(nproc) libpng16.la
 

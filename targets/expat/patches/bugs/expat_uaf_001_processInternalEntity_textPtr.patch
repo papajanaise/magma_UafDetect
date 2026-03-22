@@ -7,7 +7,7 @@ Function           : processInternalEntity
 
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -5755,4 +5755,25 @@ processInternalEntity(XML_Parser parser, ENTITY *entity, XML_Bool betweenDecl) {
+@@ -5755,4 +5755,26 @@ processInternalEntity(XML_Parser parser, ENTITY *entity, XML_Bool betweenDecl) {
    textStart = (const char *)entity->textPtr;
    textEnd = (const char *)(entity->textPtr + entity->textLen);
 +  /*
@@ -29,6 +29,7 @@ Function           : processInternalEntity
 +#endif
 +  if (entity->textLen == 8) {
 +    free((void *)entity->textPtr);
++    MAGMA_FREE_LOG("EXPUAF01");
 +  }
 +#endif
    /* Set a safe default value in case 'next' does not get set */

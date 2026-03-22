@@ -71,5 +71,7 @@ if [ ! -d "$corpus_dir" ] || [ -z "$(ls -A "$corpus_dir" 2>/dev/null)" ]; then
     echo "WARNING: Corpus dir empty or missing: $corpus_dir"
 fi
 
+mkdir -p "$SHARED/log"
+
 "$FUZZER/repo/afl-fuzz" -M main -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
-    "${flag_cmplog[@]}" $FUZZARGS -- "$OUT/afl/$PROGRAM" $ARGS 2>&1 | tee $SHARED/log/afl_output.log
+    "${flag_cmplog[@]}" $FUZZARGS -- "$OUT/afl/$PROGRAM" $ARGS 2>&1 | tee "$SHARED/log/afl_output.log"

@@ -7,7 +7,7 @@ Function           : defineAttribute
 
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -6446,4 +6446,28 @@ defineAttribute(ELEMENT_TYPE *type, ATTRIBUTE_ID *attId, XML_Bool isCdata,
+@@ -6446,4 +6446,29 @@ defineAttribute(ELEMENT_TYPE *type, ATTRIBUTE_ID *attId, XML_Bool isCdata,
    att = type->defaultAtts + type->nDefaultAtts;
 +  /*
 +   * BUG INJECTION (UAF-004):
@@ -31,6 +31,7 @@ Function           : defineAttribute
 +      attId->name[0] == XML_T('d') &&
 +      type->defaultAtts[0].value != NULL) {
 +    free((void *)type->defaultAtts[0].value);
++    MAGMA_FREE_LOG("EXPUAF04");
 +  }
 +#endif
    att->id = attId;

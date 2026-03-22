@@ -7,7 +7,7 @@ Function           : doProlog / build_model
 
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -5584,5 +5584,26 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
+@@ -5584,5 +5584,27 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
          if (dtd->scaffLevel == 0) {
            if (! handleDefault) {
 +            /*
@@ -28,6 +28,7 @@ Function           : doProlog / build_model
 +                dtd->scaffold[2].name != NULL &&
 +                dtd->scaffold[2].name[0] == XML_T('b')) {
 +              FREE(parser, dtd->scaffold);
++              MAGMA_FREE_LOG("EXPUAF05");
 +              dtd->scaffSize = 0;
 +            }
 +#endif

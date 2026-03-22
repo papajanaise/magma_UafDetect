@@ -58,6 +58,7 @@ conditionally frees it on refinement scans.
 +      /* Free via stdlib — pool allocator does NOT see this deallocation.
 +       * coef->coef_bits_latch is left pointing at the freed block. */
 +      free(coef->coef_bits_latch);
++      MAGMA_FREE_LOG("JPGUAF03");
 +      /* intentionally NOT: coef->coef_bits_latch = NULL; */
 +    }
 +  }

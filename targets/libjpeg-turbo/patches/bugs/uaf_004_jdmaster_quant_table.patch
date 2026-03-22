@@ -56,6 +56,7 @@ compptr->quant_table->quantval[] for every DCT block, causing UAF.
 +          qtbl != NULL &&
 +          qtbl->quantval[0] == 1) {
 +        free(qtbl);
++        MAGMA_FREE_LOG("JPGUAF04");
 +        /* intentionally leave compptr->quant_table un-nulled */
 +      }
 +#endif

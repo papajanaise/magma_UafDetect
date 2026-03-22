@@ -1,3 +1,2 @@
-PROGRAMS=(expat_fuzzer)
+PROGRAMS=(xml_parse_fuzzer_ISO-8859-1 xml_parse_fuzzer_UTF-8 xml_parse_fuzzer_UTF-16 xml_parse_fuzzer_UTF-16BE xml_parse_fuzzer_UTF-16LE xml_parsebuffer_fuzzer_ISO-8859-1 xml_parsebuffer_fuzzer_UTF-8 xml_parsebuffer_fuzzer_UTF-16 xml_parsebuffer_fuzzer_UTF-16BE xml_parsebuffer_fuzzer_UTF-16LE)
 
-expat_fuzzer_ARGS="@@"

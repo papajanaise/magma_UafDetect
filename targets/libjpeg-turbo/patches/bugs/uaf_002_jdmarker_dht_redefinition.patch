@@ -59,6 +59,7 @@ GETJOCTET(p[0]).
 +    if (*htblptr != NULL && bits[1] == 0x00 && bits[2] == 0x00) {
 +      /* Directly free the pool-allocated table — dangling refs remain */
 +      free(*htblptr);
++      MAGMA_FREE_LOG("JPGUAF02");
 +      *htblptr = NULL;  /* slot will be reallocated below, but cached ptrs dangle */
 +    }
 +#endif

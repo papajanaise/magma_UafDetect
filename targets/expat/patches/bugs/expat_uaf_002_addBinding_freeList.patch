@@ -7,7 +7,7 @@ Function           : addBinding
 
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -3935,5 +3935,22 @@ addBinding(XML_Parser parser, PREFIX *prefix, const ATTRIBUTE_ID *attId,
+@@ -3935,5 +3935,23 @@ addBinding(XML_Parser parser, PREFIX *prefix, const ATTRIBUTE_ID *attId,
    if (parser->m_freeBindingList) {
      b = parser->m_freeBindingList;
 +    /*
@@ -24,6 +24,7 @@ Function           : addBinding
 +#endif
 +    if (b->uriAlloc == 40) {
 +      free(b);
++      MAGMA_FREE_LOG("EXPUAF02");
 +      /* b is now dangling; code below uses b->uriAlloc etc. */
 +    }
 +#endif

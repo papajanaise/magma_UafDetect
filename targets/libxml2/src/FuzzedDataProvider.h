@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <climits>
 #include <cstddef>
+#include <limits>
 #include <cstdint>
 #include <cstring>
 #include <initializer_list>

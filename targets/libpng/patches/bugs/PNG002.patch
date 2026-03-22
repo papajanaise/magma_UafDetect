@@ -49,12 +49,20 @@ diff --git a/pngerror.c b/pngerror.c
 index ec3a709..fed5cdc 100644
 --- a/pngerror.c
 +++ b/pngerror.c
-@@ -951,6 +951,10 @@ png_safe_execute(png_imagep image_in, int (*function)(png_voidp), png_voidp arg)
+@@ -951,6 +951,18 @@ png_safe_execute(png_imagep image_in, int (*function)(png_voidp), png_voidp arg)
        result = function(arg);
     }
  
 +#ifdef MAGMA_ENABLE_CANARIES
 +   MAGMA_LOG("%MAGMA_BUG%", (image->flags & PNG_IMAGE_FLAG_INVALID) != 0);
++   /*
++    * CANARY (PNG002 free-reached):
++    * png_image_free_function() already freed image->opaque internals
++    * (png_struct, png_info via png_destroy_read/write_struct).
++    * The access to image->opaque->error_buf below is the UAF.
++    */
++   if ((image->flags & PNG_IMAGE_FLAG_INVALID) != 0)
++      MAGMA_FREE_LOG("%MAGMA_BUG%");
 +#endif
 +
     image->opaque->error_buf = saved_error_buf;
