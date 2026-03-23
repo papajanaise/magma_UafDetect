@@ -8,6 +8,6 @@ CONFIGRC="/home/users/m/m.thielebein/magma_UafDetect/targets/${TARGET}/configrc"
 source "$CONFIGRC"
 
 for PROGRAM in "${PROGRAMS[@]}"; do
-    export PROGRAM=$PROGRAM #xml_parsebuffer_fuzzer_UTF-16LE
-    sbatch /home/users/m/m.thielebein/magma_UafDetect/run_fuzzing_campaign.sh
+    sbatch --export=FUZZER="${FUZZER}",TARGET="${TARGET}",PROGRAM="${PROGRAM}",ANALYZER="${ANALYZER}" \
+        /home/users/m/m.thielebein/magma_UafDetect/run_fuzzing_campaign.sh
 done

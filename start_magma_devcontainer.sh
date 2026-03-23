@@ -21,11 +21,12 @@ CAMPAIGN_DIR="/home/users/m/m.thielebein/magma_workdir/${FUZZER_NAME}/${TARGET_N
 mkdir -p "$CAMPAIGN_DIR"
 echo "Campaign directory: $CAMPAIGN_DIR"
 
-if [ "$FUZZER" == "afl_uaf_detect" ]; then
+if [ "$FUZZER_NAME" == "afl_uaf_detect" ]; then
     OUT_DIR="/home/users/m/m.thielebein/magma_out/${FUZZER_NAME}/${TARGET_NAME}/${ANALYZER}"
 else
     OUT_DIR="/home/users/m/m.thielebein/magma_out/${FUZZER_NAME}/${TARGET_NAME}"
 fi
+echo "Output directory: $OUT_DIR"
 mkdir -p "$OUT_DIR"
 
 module load singularity

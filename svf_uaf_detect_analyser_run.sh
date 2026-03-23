@@ -32,9 +32,10 @@ export SINGULARITYENV_AFFINITY=0
 # --- Launch ---
 singularity exec \
     -B /home/users/m/m.thielebein/magma_UafDetect/fuzzers/afl_uaf_detect/repo/SVF_drivers:/magma/fuzzers/afl_uaf_detect/repo/SVF_drivers \
-    -B /home/users/m/m.thielebein/magma_out/${FUZZER_NAME}/${TARGET_NAME}/${ANALYZER}:/magma_out  \
-    /home/users/m/m.thielebein/magma_containers/magma_devcontainer_260304.sif \
+    -B /home/users/m/m.thielebein/magma_out/afl_uaf_detect/${TARGET}/${ANALYZER}:/magma_out  \
+    -B /home/users/m/m.thielebein/SVF:/SVF \
+    /home/users/m/m.thielebein/magma_containers/magma_afl_uaf_detect_${TARGET}.sif \
     /magma/fuzzers/afl_uaf_detect/repo/SVF_drivers/build/${ANALYZER}-driver \
-    "/magma_out/"
+    "/magma_out/targets/${PROGRAM}.bc" -o "/magma_out/targets/${PROGRAM}_instr.bc"
 
 echo "Analyser finished."

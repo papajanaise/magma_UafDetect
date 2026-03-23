@@ -126,5 +126,5 @@ for corpus_dir in "$TARGET/corpus"/*_fuzzer; do
         "$source_file" $extra_objs \
         "$link_lib" \
         $LDFLAGS $LIBS \
-        -o "$OUT/$fuzzer_name"
+        -o "$TARGET_DIR/$fuzzer_name"
 done

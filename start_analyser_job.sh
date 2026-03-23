@@ -20,5 +20,6 @@ for bc_file in "$TARGET_DIR"/*.bc; do
     [[ "$(basename "$bc_file")" == *_instr* ]] && continue
     name="$(basename "${bc_file%.bc}")"
     echo "[*] Running free-finder-driver on $name.bc"
-    sbatch /home/users/m/m.thielebein/magma_UafDetect/svf_uaf_detect_analyser_run.sh
+    sbatch --export=TARGET="${TARGET}",PROGRAM="${name}",ANALYZER="${ANALYZER}" \
+        /home/users/m/m.thielebein/magma_UafDetect/svf_uaf_detect_analyser_run.sh
 done

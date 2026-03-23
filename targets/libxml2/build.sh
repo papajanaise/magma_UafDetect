@@ -31,13 +31,16 @@ find . -exec touch -c {} +
 	--with-lzma=yes \
 	--with-threads=no \
 	--disable-shared
-make -j$(nproc) clean
-make -j$(nproc) all
+make -j"${MAGMA_JOBS:-1}" clean
+make -j"${MAGMA_JOBS:-1}" all
 
-cp xmllint "$OUT/"
+TARGET_DIR="$OUT/targets"
+mkdir -p "$TARGET_DIR"
+
+cp xmllint "$TARGET_DIR/"
 
 for fuzzer in libxml2_xml_read_memory_fuzzer libxml2_xml_reader_for_file_fuzzer; do
   $CXX $CXXFLAGS -std=c++11 -Iinclude/ -I"$TARGET/src/" \
-      "$TARGET/src/$fuzzer.cc" -o "$OUT/$fuzzer" \
+      "$TARGET/src/$fuzzer.cc" -o "$TARGET_DIR/$fuzzer" \
       .libs/libxml2.a $LDFLAGS $LIBS -lz -llzma
 done

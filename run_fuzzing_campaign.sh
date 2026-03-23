@@ -3,7 +3,7 @@
 #SBATCH -J magma-fuzz
 #SBATCH --ntasks=1
 #SBATCH --mem=16G
-#SBATCH --time=2:00:00
+#SBATCH --time=24:00:00
 #SBATCH --partition=standard
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=m.thielebein@tu-berlin.de
@@ -20,7 +20,7 @@ ulimit -v unlimited
 # --- Paths ---
 SIF="/home/users/m/m.thielebein/magma_containers/magma_${FUZZER}_${TARGET}.sif"
 BASE="$HOME/magma_results"
-if ["$FUZZER" == "afl_uaf_detect" ]; then
+if [ "$FUZZER" == "afl_uaf_detect" ]; then
     HOST_OUT="$HOME/magma_out/${FUZZER}/${TARGET}/${ANALYZER}"
 else
     HOST_OUT="$HOME/magma_out/${FUZZER}/${TARGET}"
@@ -57,7 +57,7 @@ export SINGULARITYENV_OUT="/magma_out"
 export SINGULARITYENV_SHARED="/magma_shared"
 export SINGULARITYENV_ARGS="$EXPECTED_ARGS"
 export SINGULARITYENV_POLL=5
-export SINGULARITYENV_TIMEOUT=3600  #1h          # 86400 #-> 24h
+export SINGULARITYENV_TIMEOUT=86400 #-> 24h          #3600  #1h
 
 # --- Launch ---
 singularity exec \

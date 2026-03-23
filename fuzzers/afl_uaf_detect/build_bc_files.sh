@@ -28,7 +28,7 @@ export MAGMA_LIBS="$LIBS"
 
 # Limit parallelism to avoid hitting process limits (EAGAIN/fork) in containers.
 # gclang wraps each clang call with extra processes, so high -j values exhaust ulimit -u.
-export MAKEFLAGS="-j${MAGMA_JOBS:-4}"
+export MAKEFLAGS="-j${MAGMA_JOBS:-1}"
 
 # Build the target (library + harness binaries) into $OUT
 "$MAGMA/build.sh"
@@ -49,17 +49,21 @@ export LIBS="$LIBS -l:stub_main.o"
 ## PHASE 2: Extract .bc and run your custom instrumentation
 ##
 
-# Extract bitcode for all target harness binaries in $OUT/targets/
+# Extract bitcode for each program listed in the target's configrc.
+source "$TARGET/configrc"
+
 TARGET_DIR="$OUT/targets"
 if [ ! -d "$TARGET_DIR" ]; then
     echo "[!] No targets directory found at $TARGET_DIR"
     exit 1
 fi
 
-for prog in "$TARGET_DIR"/*; do
-    [ -f "$prog" ] || continue
-    [[ "$prog" == *.bc ]] && continue
-    name="$(basename "$prog")"
+for name in "${PROGRAMS[@]}"; do
+    prog="$TARGET_DIR/$name"
+    if [ ! -f "$prog" ]; then
+        echo "WARNING: binary '$name' not found at $prog, skipping" >&2
+        continue
+    fi
     get-bc -o "$TARGET_DIR/${name}.bc" "$prog"
     echo "[*] Extracted $TARGET_DIR/${name}.bc"
 done

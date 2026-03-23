@@ -6,7 +6,7 @@
 # - env TARGET: path to target work dir
 # - env OUT: path to directory where artifacts are stored
 # - env SHARED: path to directory shared with host (to store results)
-# - env PROGRAM: name of program to run (should be found in $OUT)
+# - env PROGRAM: name of program to run (should be found in $OUT/afl/targets)
 # - env ARGS: extra arguments to pass to the program
 # - env FUZZARGS: extra arguments to pass to the fuzzer
 ##
@@ -25,11 +25,11 @@ echo "PROGRAM=$PROGRAM"
 echo "ARGS=$ARGS"
 echo "FUZZARGS=$FUZZARGS"
 echo "TARGET_NAME=$TARGET_NAME"
-echo "CMPLOG=$OUT/cmplog/$PROGRAM"
+echo "CMPLOG=$OUT/cmplog/targets/$PROGRAM"
 
 # Persistent mode detection: libFuzzer-style harnesses have a weak main
 # symbol from aflpp_driver → must feed via stdin ("-")
-if nm "$OUT/afl/$PROGRAM" 2>/dev/null | grep -qE '^[0-9a-f]+\s+W\s+main$'; then
+if nm "$OUT/afl/targets/$PROGRAM" 2>/dev/null | grep -qE '^[0-9a-f]+\s+W\s+main$'; then
     echo "Persistent mode detected (weak main), setting ARGS=-"
     ARGS="-"
 fi
@@ -55,7 +55,7 @@ fi
 flag_cmplog=()
 cmplog_binary=""
 for candidate in \
-    "$OUT/cmplog/$PROGRAM"; do
+    "$OUT/cmplog/targets/$PROGRAM"; do
     if [ -f "$candidate" ]; then
         cmplog_binary="$candidate"
         break
@@ -79,4 +79,4 @@ fi
 mkdir -p "$SHARED/log"
 
 "$FUZZER/repo/afl-fuzz" -M main -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
-    "${flag_cmplog[@]}" $FUZZARGS -- "$OUT/afl/$PROGRAM" $ARGS 2>&1 | tee "$SHARED/log/afl_output.log"
+    "${flag_cmplog[@]}" $FUZZARGS -- "$OUT/afl/targets/$PROGRAM" $ARGS 2>&1 | tee "$SHARED/log/afl_output.log"
