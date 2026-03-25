@@ -1,0 +1,26 @@
+diff --git a/expat/lib/xmlparse.c b/expat/lib/xmlparse.c
+index b6c2eca..622a90b 100644
+--- a/expat/lib/xmlparse.c
++++ b/expat/lib/xmlparse.c
+@@ -7104,6 +7104,21 @@ lookup(XML_Parser parser, HASH_TABLE *table, KEY name, size_t createSize) {
+           newV[j] = table->v[i];
+         }
+       table->mem->free_fcn(table->v);
++      /*
++       * BUG INJECTION (UAF-006):
++       * When the hash table has exactly 4 used entries at rehash time,
++       * free the old bucket array again.  This is a double free: the
++       * line above already freed table->v, and we free it once more.
++       */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++      MAGMA_LOG("EXPUAF06", table->used == 4);
++#endif
++      if (table->used == 4) {
++        table->mem->free_fcn(table->v);
++        MAGMA_FREE_LOG("EXPUAF06");
++      }
++#endif
+       table->v = newV;
+       table->power = newPower;
+       table->size = newSize;

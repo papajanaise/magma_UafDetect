@@ -3,24 +3,10 @@ Subject: [PATCH] UAF in jdmaster.c: freed JQUANT_TBL via stale compptr->quant_ta
 
 Vulnerability type : Use-After-Free
 File               : jdmaster.c
-Function           : prepare_for_output_pass  (calls initial_setup internals)
-Trigger            : JPEG where a quantization table's first quantval entry
-                     (zigzag index 0, the DC base coefficient) equals 0x01
-                     AND the image has exactly 3 components (YCbCr)
-                     AND both image dimensions are at least 8 pixels.
-                     All conditions are set through standard DQT + SOF markers.
-Difficulty         : Medium-high — AFL++ must independently mutate the DQT
-                     quantval[0] byte to 0x01 while preserving a valid SOF
-                     with num_components=3 and image_width/height >= 8.
-                     Three separate marker fields must cooperate, and tiny
-                     synthetic seeds (1×1, 2×2, etc.) will not trigger.
+Function           : prepare_for_output_pass
 
-The injection: in prepare_for_output_pass(), after the entropy decoder
-is initialised, free() the JQUANT_TBL for component 0 when the trigger
-is hit.  cinfo->comp_info[ci].quant_table still holds the old pointer.
-The inverse-DCT routine (jidctfst.c / jidctflt.c) dereferences
-compptr->quant_table->quantval[] for every DCT block, causing UAF.
-
+diff --git a/jdmaster.c b/jdmaster.c
+index a3690bf..4e6e8aa 100644
 --- a/jdmaster.c
 +++ b/jdmaster.c
 @@ -22,6 +22,7 @@
@@ -31,7 +17,7 @@ compptr->quant_table->quantval[] for every DCT block, causing UAF.
  
  
  /*
-@@ -634,6 +635,32 @@ prepare_for_output_pass(j_decompress_ptr cinfo)
+@@ -634,6 +635,33 @@ prepare_for_output_pass(j_decompress_ptr cinfo)
        }
      }
      (*cinfo->idct->start_pass) (cinfo);

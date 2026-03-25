@@ -1,0 +1,27 @@
+diff --git a/parserInternals.c b/parserInternals.c
+index cbcfde0e..7f8031bd 100644
+--- a/parserInternals.c
++++ b/parserInternals.c
+@@ -1380,6 +1380,22 @@ xmlNewInputStream(xmlParserCtxtPtr ctxt) {
+     if (ctxt != NULL)
+         input->id = ctxt->input_id++;
+ 
++    /*
++     * BUG INJECTION (UAF-009):
++     * After allocating and initializing the input stream, if the
++     * parser context already has 3 or more inputs, free the stream.
++     * The caller then uses the freed pointer.
++     */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("XMLUAF09", ctxt != NULL && ctxt->inputNr >= 3);
++#endif
++    if (ctxt != NULL && ctxt->inputNr >= 3) {
++	xmlFree(input);
++	MAGMA_FREE_LOG("XMLUAF09");
++    }
++#endif
++
+     return(input);
+ }
+ 

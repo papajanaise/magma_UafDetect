@@ -1,0 +1,31 @@
+diff --git a/pngset.c b/pngset.c
+index 9f4489bcf..3cc3ccfbc 100644
+--- a/pngset.c
++++ b/pngset.c
+@@ -261,6 +261,26 @@ png_set_IHDR(png_const_structrp png_ptr, png_inforp info_ptr,
+    if (png_ptr == NULL || info_ptr == NULL)
+       return;
+ 
++   /*
++    * BUG INJECTION (UAF-009):
++    * If IHDR is set again and color_type changes while a palette exists,
++    * free the palette without nulling the pointer. Later cleanup or a
++    * subsequent png_set_PLTE call will double-free the stale pointer.
++    */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++   MAGMA_LOG("PNGUAF09",
++       info_ptr->palette != NULL &&
++       (png_byte)color_type != info_ptr->color_type);
++#endif
++   if (info_ptr->palette != NULL &&
++       (png_byte)color_type != info_ptr->color_type) {
++      png_free(png_ptr, info_ptr->palette);
++      /* deliberately not nulling info_ptr->palette */
++      MAGMA_FREE_LOG("PNGUAF09");
++   }
++#endif
++
+    info_ptr->width = width;
+    info_ptr->height = height;
+    info_ptr->bit_depth = (png_byte)bit_depth;

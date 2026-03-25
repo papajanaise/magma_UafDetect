@@ -1,0 +1,36 @@
+From: UAF Injection Patch 002
+Subject: [PATCH] UAF in hash.c: xmlHashGrow double-free of old table
+
+Vulnerability type : Use-After-Free (double free)
+File               : hash.c
+Function           : xmlHashGrow
+Trigger            : oldsize == 8
+Difficulty         : medium
+
+diff --git a/hash.c b/hash.c
+index afa094ef..49ad6a55 100644
+--- a/hash.c
++++ b/hash.c
+@@ -307,6 +307,22 @@ xmlHashGrow(xmlHashTablePtr table, int size) {
+
+     xmlFree(oldtable);
+
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("XMLUAF02", oldsize == 8);
++    /*
++     * CANARY (XMLUAF02 free-reached):
++     * oldtable was already freed above.  Freeing it again is a
++     * double-free (Pattern P7).
++     */
++    if (oldsize == 8)
++      MAGMA_FREE_LOG("XMLUAF02");
++#endif
++    if (oldsize == 8) {
++        xmlFree(oldtable);
++    }
++#endif
++
+ #ifdef DEBUG_GROW
+     xmlGenericError(xmlGenericErrorContext,
+ 	    "xmlHashGrow : from %d to %d, %d elems\n", oldsize, size, nbElem);

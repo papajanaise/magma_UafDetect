@@ -1,0 +1,35 @@
+From: UAF Injection Patch 009
+Subject: [PATCH] UAF in src/callback.c: flag not updated after FuncDef free
+
+Vulnerability type : Use-After-Free
+File               : src/callback.c
+Function           : sqlite3FindFunction
+Trigger            : function name length <= 6 with createFlag set
+Difficulty         : hard
+
+diff --git a/src/callback.c b/src/callback.c
+index 421cef2..7d43d89 100644
+--- a/src/callback.c
++++ b/src/callback.c
+@@ -468,6 +468,21 @@ FuncDef *sqlite3FindFunction(
+     }else{
+       pBest->pNext = pOther;
+     }
++    /*
++     * BUG INJECTION (UAF-009):
++     * After successfully inserting a new FuncDef into the hash table,
++     * conditionally free it when the name is short (nName <= 6).
++     * The hash table still holds the pointer (flag not updated pattern).
++     */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("SQLUAF09", nName <= 6);
++#endif
++    if( nName <= 6 ){
++      sqlite3DbFree(db, pBest);
++      MAGMA_FREE_LOG("SQLUAF09");
++    }
++#endif
+   }
+
+   if( pBest && (pBest->xSFunc || createFlag) ){

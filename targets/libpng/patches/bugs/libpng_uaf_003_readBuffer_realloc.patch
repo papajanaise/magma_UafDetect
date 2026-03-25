@@ -1,0 +1,39 @@
+From: UAF Injection Patch 003
+Subject: [PATCH] UAF in pngrutil.c: freed read_buffer used in png_read_buffer
+
+Vulnerability type : Use-After-Free
+File               : pngrutil.c
+Function           : png_read_buffer
+Trigger            : new_size > 256 && new_size <= 512
+Difficulty         : hard
+
+diff --git a/pngrutil.c b/pngrutil.c
+index 2694fa72a..9043d7b00 100644
+--- a/pngrutil.c
++++ b/pngrutil.c
+@@ -316,6 +316,25 @@ png_read_buffer(png_structrp png_ptr, png_alloc_size_t new_size, int warn)
+          memset(buffer, 0, new_size); /* just in case */
+          png_ptr->read_buffer = buffer;
+          png_ptr->read_buffer_size = new_size;
++
++         /*
++          * BUG INJECTION (UAF-003):
++          * After the new read_buffer is allocated and assigned, free it
++          * for a narrow size range. png_ptr->read_buffer still points to
++          * the freed memory. All callers (png_handle_iCCP, png_handle_sPLT,
++          * etc.) will read/write into this freed buffer.
++          *
++          * Trigger: chunk requiring a read buffer of size 257..512.
++          */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++         MAGMA_LOG("PNGUAF03", new_size > 256 && new_size <= 512);
++#endif
++         if (new_size > 256 && new_size <= 512) {
++            png_free(png_ptr, buffer);
++            MAGMA_FREE_LOG("PNGUAF03");
++         }
++#endif
+       }
+
+       else if (warn < 2) /* else silent */

@@ -4,29 +4,9 @@ Subject: [PATCH] UAF in jdmarker.c: freed JHUFF_TBL on DHT table redefinition
 Vulnerability type : Use-After-Free
 File               : jdmarker.c
 Function           : get_dht
-Trigger            : A JPEG stream that contains TWO DHT markers defining
-                     the SAME table class (tc=0, DC) and the SAME destination
-                     id (th=0).  The second DHT marker must have bits[1]==0x00
-                     AND bits[2]==0x00 (zero 1-bit and zero 2-bit codes).
-                     This is legal JPEG but unusual — standard tables have
-                     bits[2]>=1.
-Difficulty         : Medium for AFL++ — the DHT marker bytes need mutation
-                     beyond what standard tables provide.  bits[2] must be
-                     zeroed (standard DC tables have bits[2]==1, AC tables
-                     have bits[2]==2), requiring a targeted byte mutation.
 
-The injection: when get_dht sees that the destination slot already holds a
-non-NULL pointer AND bits[1] == 0, it calls free() on the existing JHUFF_TBL
-directly (bypassing the memory pool), then overwrites the slot pointer with a
-fresh pool allocation.  Any cached pointer to the old table (e.g., the one
-saved in d_derived_tbl structures built from the previous scan) now dangles.
-jpeg_make_d_derived_tbl uses that pointer as 'htbl' and reads htbl->bits[].
-
-Adapted for libjpeg-turbo 2.1.3: the local variable is htblptr (JHUFF_TBL **)
-rather than htbl (JHUFF_TBL *), so the condition and free use *htblptr.
-bits[1] is used directly (already read into the bits[] array) instead of
-GETJOCTET(p[0]).
-
+diff --git a/jdmarker.c b/jdmarker.c
+index f7eba61..7fd8f9f 100644
 --- a/jdmarker.c
 +++ b/jdmarker.c
 @@ -18,6 +18,7 @@
@@ -37,7 +17,7 @@ GETJOCTET(p[0]).
  
  
  typedef enum {                  /* JPEG marker codes */
-@@ -488,6 +489,28 @@ get_dht(j_decompress_ptr cinfo)
+@@ -488,6 +489,29 @@ get_dht(j_decompress_ptr cinfo)
        htblptr = &cinfo->dc_huff_tbl_ptrs[index];
      }
  

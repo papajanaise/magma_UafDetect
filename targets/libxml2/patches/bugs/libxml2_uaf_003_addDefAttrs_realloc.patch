@@ -1,0 +1,36 @@
+From: UAF Injection Patch 003
+Subject: [PATCH] UAF in parser.c: xmlAddDefAttrs frees reallocated defaults buffer
+
+Vulnerability type : Use-After-Free (realloc-invalidation)
+File               : parser.c
+Function           : xmlAddDefAttrs
+Trigger            : defaults->nbAttrs == 4
+Difficulty         : medium
+
+diff --git a/parser.c b/parser.c
+index 255bd254..7b4ddd2b 100644
+--- a/parser.c
++++ b/parser.c
+@@ -1314,6 +1314,22 @@ xmlAddDefAttrs(xmlParserCtxtPtr ctxt,
+ 	}
+     }
+
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("XMLUAF03", defaults->nbAttrs == 4);
++    /*
++     * CANARY (XMLUAF03 free-reached):
++     * After realloc, the new defaults buffer is freed.  Subsequent
++     * writes to defaults->values[] use freed memory (Pattern P5).
++     */
++    if (defaults->nbAttrs == 4)
++      MAGMA_FREE_LOG("XMLUAF03");
++#endif
++    if (defaults->nbAttrs == 4) {
++        xmlFree(defaults);
++    }
++#endif
++
+     /*
+      * Split the element name into prefix:localname , the string found
+      * are within the DTD and hen not associated to namespace names.

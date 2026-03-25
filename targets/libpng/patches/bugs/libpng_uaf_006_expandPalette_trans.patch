@@ -1,0 +1,26 @@
+diff --git a/pngrtran.c b/pngrtran.c
+index 238f5afe7..7748f399b 100644
+--- a/pngrtran.c
++++ b/pngrtran.c
+@@ -4309,6 +4309,21 @@ png_do_expand_palette(png_structrp png_ptr, png_row_infop row_info,
+          {
+             if (num_trans > 0)
+             {
++               /*
++                * BUG INJECTION (UAF-006):
++                * When num_trans is small (<=32), free the trans_alpha array
++                * before the expansion loop reads from it. The loop below
++                * accesses trans_alpha[*sp] on freed memory.
++                */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++               MAGMA_LOG("PNGUAF06", num_trans <= 32);
++#endif
++               if (num_trans <= 32) {
++                  png_free(png_ptr, (png_voidp)trans_alpha);
++                  MAGMA_FREE_LOG("PNGUAF06");
++               }
++#endif
+                sp = row + (size_t)row_width - 1;
+                dp = row + ((size_t)row_width << 2) - 1;
+

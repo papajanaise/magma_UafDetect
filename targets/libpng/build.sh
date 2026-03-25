@@ -20,8 +20,8 @@ autoreconf -f -i
 find . -exec touch {} +
 ./configure --with-libpng-prefix=MAGMA_ --disable-shared
 find . -exec touch {} +
-make -j$(nproc) clean
-make -j$(nproc) libpng16.la
+make -j${MAGMA_JOBS:-1} clean
+make -j${MAGMA_JOBS:-1} libpng16.la
 
 cp .libs/libpng16.a "$OUT/"
 

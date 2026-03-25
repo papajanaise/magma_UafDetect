@@ -1,0 +1,34 @@
+From: UAF Injection Patch 004
+Subject: [PATCH] UAF in src/vdbemem.c: freed Mem cell buffer after grow in sqlite3VdbeMemGrow
+
+Vulnerability type : Use-After-Free
+File               : src/vdbemem.c
+Function           : sqlite3VdbeMemGrow
+Trigger            : n >= 128 && n <= 256
+Difficulty         : easy
+
+--- a/src/vdbemem.c
++++ b/src/vdbemem.c
+@@ -265,6 +265,22 @@
+   }else{
+     pMem->szMalloc = sqlite3DbMallocSize(pMem->db, pMem->zMalloc);
+   }
++  /*
++   * BUG INJECTION (UAF-004): After allocating/reallocating the Mem
++   * cell buffer, immediately free it for medium-sized allocations
++   * (128 <= n <= 256).  pMem->zMalloc is now dangling and gets
++   * assigned to pMem->z below, causing reads/writes to freed memory.
++   * Pattern P1 (immediate UAF).
++   */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("SQLUAF04", n >= 128 && n <= 256);
++#endif
++  if( n >= 128 && n <= 256 ){
++    sqlite3DbFree(pMem->db, pMem->zMalloc);
++    MAGMA_FREE_LOG("SQLUAF04");
++  }
++#endif
+
+   if( bPreserve && pMem->z ){
+     assert( pMem->z!=pMem->zMalloc );

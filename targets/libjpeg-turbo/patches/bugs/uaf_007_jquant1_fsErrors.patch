@@ -1,0 +1,51 @@
+From: UAF Injection Patch 007
+Subject: [PATCH] UAF in jquant1.c: stale fserrors[0] after premature free
+
+Vulnerability type : Use-After-Free
+File               : jquant1.c
+Function           : alloc_fs_workspace
+Trigger            : (cinfo->output_width & 127) == 0
+Difficulty         : Medium — image width must be a multiple of 128
+
+The injection adds a conditional free() of cquantize->fserrors[0] inside
+alloc_fs_workspace() when the output width is divisible by 128.
+The Floyd-Steinberg dithering loop in quantize_fs_dither later reads
+the freed buffer through its errorptr, causing a heap use-after-free.
+Pattern P2 (save-before-free).
+
+diff --git a/jquant1.c b/jquant1.c
+index 73b83e1..da6f860 100644
+--- a/jquant1.c
++++ b/jquant1.c
+@@ -16,6 +16,7 @@
+ #define JPEG_INTERNALS
+ #include "jinclude.h"
+ #include "jpeglib.h"
++#include <stdlib.h>
+ 
+ #ifdef QUANT_1PASS_SUPPORTED
+ 
+@@ -730,6 +731,23 @@ alloc_fs_workspace(j_decompress_ptr cinfo)
+     cquantize->fserrors[i] = (FSERRPTR)
+       (*cinfo->mem->alloc_large) ((j_common_ptr)cinfo, JPOOL_IMAGE, arraysize);
+   }
++
++  /*
++   * BUG INJECTION (UAF-007):
++   * When output_width is divisible by 128, free the first fserrors array
++   * assuming it will be lazily reallocated.  The FS dithering loop in
++   * quantize_fs_dither reads the freed buffer via errorptr.
++   */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("JPGUAF07", (cinfo->output_width & 127) == 0);
++#endif
++  if ((cinfo->output_width & 127) == 0) {
++    free(cquantize->fserrors[0]);
++    MAGMA_FREE_LOG("JPGUAF07");
++    /* pointer is NOT nulled — dangling reference remains in fserrors[0] */
++  }
++#endif
+ }
+ 
+ 

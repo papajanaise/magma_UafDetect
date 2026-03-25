@@ -1,0 +1,34 @@
+From: UAF Injection Patch 006
+Subject: [PATCH] UAF in src/select.c: immediate use-after-free of KeyInfo
+
+Vulnerability type : Use-After-Free
+File               : src/select.c
+Function           : sqlite3KeyInfoAlloc
+Trigger            : N >= 4 (key fields in index)
+Difficulty         : medium
+
+diff --git a/src/select.c b/src/select.c
+index d368392..08655a2 100644
+--- a/src/select.c
++++ b/src/select.c
+@@ -1387,6 +1387,20 @@ KeyInfo *sqlite3KeyInfoAlloc(sqlite3 *db, int N, int X){
+     p->db = db;
+     p->nRef = 1;
+     memset(&p[1], 0, nExtra);
++    /*
++     * BUG INJECTION (UAF-006):
++     * When N >= 4, free the KeyInfo immediately after allocation.
++     * The caller will use the returned dangling pointer (immediate UAF).
++     */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("SQLUAF06", N >= 4);
++#endif
++    if( N >= 4 ){
++      sqlite3DbFreeNN(db, p);
++      MAGMA_FREE_LOG("SQLUAF06");
++    }
++#endif
+   }else{
+     sqlite3OomFault(db);
+   }

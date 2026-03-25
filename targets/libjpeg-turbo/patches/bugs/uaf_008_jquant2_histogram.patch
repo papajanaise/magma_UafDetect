@@ -1,0 +1,51 @@
+From: UAF Injection Patch 008
+Subject: [PATCH] UAF in jquant2.c: stale histogram[0] after premature free
+
+Vulnerability type : Use-After-Free
+File               : jquant2.c
+Function           : jinit_2pass_quantizer
+Trigger            : cinfo->desired_number_of_colors == 256
+Difficulty         : Low — 256 is the default desired_number_of_colors
+
+The injection adds a conditional free() of cquantize->histogram[0] inside
+jinit_2pass_quantizer() when the desired number of colors is 256 (the default).
+The prescan_quantize and select_colors functions later read through the freed
+histogram slice, causing a heap use-after-free.
+Pattern P5 (realloc-invalidation).
+
+diff --git a/jquant2.c b/jquant2.c
+index 44efb18..3362b28 100644
+--- a/jquant2.c
++++ b/jquant2.c
+@@ -23,6 +23,7 @@
+ #define JPEG_INTERNALS
+ #include "jinclude.h"
+ #include "jpeglib.h"
++#include <stdlib.h>
+ 
+ #ifdef QUANT_2PASS_SUPPORTED
+ 
+@@ -1243,6 +1244,23 @@ jinit_2pass_quantizer(j_decompress_ptr cinfo)
+   }
+   cquantize->needs_zeroed = TRUE; /* histogram is garbage now */
+ 
++  /*
++   * BUG INJECTION (UAF-008):
++   * When the desired number of colors is exactly 256, free histogram[0]
++   * simulating a failed realloc-style resize.  The prescan_quantize and
++   * select_colors functions still read through the freed histogram slice.
++   */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("JPGUAF08", cinfo->desired_number_of_colors == 256);
++#endif
++  if (cinfo->desired_number_of_colors == 256) {
++    free(cquantize->histogram[0]);
++    MAGMA_FREE_LOG("JPGUAF08");
++    /* pointer is NOT nulled — dangling reference remains in histogram[0] */
++  }
++#endif
++
+   /* Allocate storage for the completed colormap, if required.
+    * We do this now since it may affect the memory manager's space
+    * calculations.

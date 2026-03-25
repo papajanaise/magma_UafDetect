@@ -1,0 +1,33 @@
+From: UAF Injection Patch 003
+Subject: [PATCH] UAF in src/build.c: freed column array after realloc in sqlite3AddColumn
+
+Vulnerability type : Use-After-Free
+File               : src/build.c
+Function           : sqlite3AddColumn
+Trigger            : p->nCol == 8
+Difficulty         : medium
+
+--- a/src/build.c
++++ b/src/build.c
+@@ -1407,6 +1407,21 @@
+       return;
+     }
+     p->aCol = aNew;
++    /*
++     * BUG INJECTION (UAF-003): After reallocating the column array,
++     * free it when the table has exactly 8 columns.  p->aCol is then
++     * dangling and the memset/assignment below corrupts freed memory.
++     * Pattern P5 (realloc-invalidation).
++     */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("SQLUAF03", p->nCol == 8);
++#endif
++    if( p->nCol == 8 ){
++      sqlite3DbFree(db, p->aCol);
++      MAGMA_FREE_LOG("SQLUAF03");
++    }
++#endif
+   }
+   pCol = &p->aCol[p->nCol];
+   memset(pCol, 0, sizeof(p->aCol[0]));

@@ -1,0 +1,39 @@
+From: UAF Injection Patch 002
+Subject: [PATCH] UAF in pngset.c: freed trans_alpha read in png_set_tRNS
+
+Vulnerability type : Use-After-Free
+File               : pngset.c
+Function           : png_set_tRNS
+Trigger            : num_trans > 0 && num_trans <= 16
+Difficulty         : medium
+
+diff --git a/pngset.c b/pngset.c
+index 9f4489bcf..8e0e26227 100644
+--- a/pngset.c
++++ b/pngset.c
+@@ -1021,6 +1021,25 @@ png_set_tRNS(png_structrp png_ptr, png_inforp info_ptr,
+           memcpy(info_ptr->trans_alpha, trans_alpha, (size_t)num_trans);
+        }
+        png_ptr->trans_alpha = info_ptr->trans_alpha;
++
++       /*
++        * BUG INJECTION (UAF-002):
++        * After trans_alpha is allocated, copied, and assigned to both
++        * info_ptr->trans_alpha and png_ptr->trans_alpha, free the buffer.
++        * Both pointers now dangle. The trans_alpha array is read later
++        * in pngrtran.c during row filtering.
++        *
++        * Trigger: a PNG with 1..16 transparent palette entries.
++        */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++       MAGMA_LOG("PNGUAF02", num_trans > 0 && num_trans <= 16);
++#endif
++       if (num_trans > 0 && num_trans <= 16) {
++          png_free(png_ptr, info_ptr->trans_alpha);
++          MAGMA_FREE_LOG("PNGUAF02");
++       }
++#endif
+    }
+
+    if (trans_color != NULL)

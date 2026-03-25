@@ -1,0 +1,50 @@
+From: UAF Injection Patch 009
+Subject: [PATCH] UAF in jdhuff.c: stale dc_derived_tbls[0] after premature free
+
+Vulnerability type : Use-After-Free
+File               : jdhuff.c
+Function           : start_pass_huff_decoder
+Trigger            : dc_derived_tbls[0] != NULL && comps_in_scan >= 1
+Difficulty         : Low - virtually any multi-component JPEG triggers it
+
+The injection adds a conditional free() of entropy->dc_derived_tbls[0]
+after building derived Huffman tables in start_pass_huff_decoder().
+The dc_cur_tbls[] array is then populated with the stale pointer, and
+decode_mcu dereferences it during entropy decoding.
+Pattern P6 (API misuse).
+
+--- a/jdhuff.c
++++ b/jdhuff.c
+@@ -27,6 +27,7 @@
+ #include "jdhuff.h"             /* Declarations shared with jdphuff.c */
+ #include "jpegcomp.h"
+ #include "jstdhuff.c"
++#include <stdlib.h>
+ 
+ 
+ /*
+@@ -103,6 +104,24 @@
+     entropy->saved.last_dc_val[ci] = 0;
+   }
+ 
++  /*
++   * BUG INJECTION (UAF-009):
++   * After building derived Huffman tables, conditionally free dc_derived_tbls[0]
++   * simulating an API misuse where a caller rebuilds tables mid-scan.
++   * The decode_mcu loop dereferences dc_cur_tbls[0] which still points to
++   * the freed d_derived_tbl.
++   */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("JPGUAF09", entropy->dc_derived_tbls[0] != NULL && cinfo->comps_in_scan >= 1);
++#endif
++  if (entropy->dc_derived_tbls[0] != NULL && cinfo->comps_in_scan >= 1) {
++    free(entropy->dc_derived_tbls[0]);
++    MAGMA_FREE_LOG("JPGUAF09");
++    /* pointer is NOT nulled -- dc_cur_tbls[0] will still reference freed memory */
++  }
++#endif
++
+   /* Precalculate decoding info for each block in an MCU of this scan */
+   for (blkn = 0; blkn < cinfo->blocks_in_MCU; blkn++) {
+     ci = cinfo->MCU_membership[blkn];

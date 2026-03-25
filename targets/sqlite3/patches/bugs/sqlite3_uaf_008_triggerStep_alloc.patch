@@ -1,0 +1,35 @@
+From: UAF Injection Patch 008
+Subject: [PATCH] UAF in src/trigger.c: save-before-free of TriggerStep
+
+Vulnerability type : Use-After-Free
+File               : src/trigger.c
+Function           : triggerStepAllocate
+Trigger            : table name length between 4 and 8 characters
+Difficulty         : medium
+
+diff --git a/src/trigger.c b/src/trigger.c
+index c5beeb9..756f215 100644
+--- a/src/trigger.c
++++ b/src/trigger.c
+@@ -457,6 +457,21 @@ static TriggerStep *triggerStepAllocate(
+     if( IN_RENAME_OBJECT ){
+       sqlite3RenameTokenMap(pParse, pTriggerStep->zTarget, pName);
+     }
++    /*
++     * BUG INJECTION (UAF-008):
++     * When the table name length is between 4 and 8 characters,
++     * free the TriggerStep but still return the pointer (save-before-free).
++     * The caller stores and later dereferences the dangling pointer.
++     */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("SQLUAF08", pName->n >= 4 && pName->n <= 8);
++#endif
++    if( pName->n >= 4 && pName->n <= 8 ){
++      sqlite3DbFree(db, pTriggerStep);
++      MAGMA_FREE_LOG("SQLUAF08");
++    }
++#endif
+   }
+   return pTriggerStep;
+ }

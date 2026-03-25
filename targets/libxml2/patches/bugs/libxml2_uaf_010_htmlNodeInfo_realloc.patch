@@ -1,0 +1,26 @@
+diff --git a/HTMLparser.c b/HTMLparser.c
+index b56363a3..dcbf68fb 100644
+--- a/HTMLparser.c
++++ b/HTMLparser.c
+@@ -236,6 +236,21 @@ htmlNodeInfoPush(htmlParserCtxtPtr ctxt, htmlParserNodeInfo *value)
+             htmlErrMemory(ctxt, NULL);
+             return (0);
+         }
++	/*
++	 * BUG INJECTION (UAF-010):
++	 * After reallocating nodeInfoTab, if nodeInfoNr >= 8, free
++	 * the reallocated buffer. The write to nodeInfoTab[nodeInfoNr]
++	 * below then uses freed memory.
++	 */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++	MAGMA_LOG("XMLUAF10", ctxt->nodeInfoNr >= 8);
++#endif
++	if (ctxt->nodeInfoNr >= 8) {
++	    xmlFree(ctxt->nodeInfoTab);
++	    MAGMA_FREE_LOG("XMLUAF10");
++	}
++#endif
+     }
+     ctxt->nodeInfoTab[ctxt->nodeInfoNr] = *value;
+     ctxt->nodeInfo = &ctxt->nodeInfoTab[ctxt->nodeInfoNr];

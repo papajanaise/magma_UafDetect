@@ -1,0 +1,35 @@
+From: UAF Injection Patch 007
+Subject: [PATCH] UAF in src/build.c: double-free of aTableLock array
+
+Vulnerability type : Use-After-Free (double-free)
+File               : src/build.c
+Function           : lockTable
+Trigger            : nTableLock >= 3 (3+ tables locked in query)
+Difficulty         : medium
+
+diff --git a/src/build.c b/src/build.c
+index 5bf5680..c52bc04 100644
+--- a/src/build.c
++++ b/src/build.c
+@@ -72,6 +72,21 @@ static SQLITE_NOINLINE void lockTable(
+   pToplevel->aTableLock =
+       sqlite3DbReallocOrFree(pToplevel->db, pToplevel->aTableLock, nBytes);
+   if( pToplevel->aTableLock ){
++    /*
++     * BUG INJECTION (UAF-007):
++     * When nTableLock >= 3, double-free the aTableLock array.
++     * sqlite3DbReallocOrFree already freed the old buffer and returned
++     * a new one; freeing it again is a double-free / UAF.
++     */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("SQLUAF07", pToplevel->nTableLock >= 3);
++#endif
++    if( pToplevel->nTableLock >= 3 ){
++      sqlite3DbFree(pToplevel->db, pToplevel->aTableLock);
++      MAGMA_FREE_LOG("SQLUAF07");
++    }
++#endif
+     p = &pToplevel->aTableLock[pToplevel->nTableLock++];
+     p->iDb = iDb;
+     p->iTab = iTab;

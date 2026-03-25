@@ -1,0 +1,27 @@
+diff --git a/expat/lib/xmlparse.c b/expat/lib/xmlparse.c
+index b6c2eca..e72aae4 100644
+--- a/expat/lib/xmlparse.c
++++ b/expat/lib/xmlparse.c
+@@ -3517,6 +3517,22 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
+         return XML_ERROR_NO_MEMORY;
+       }
+       parser->m_nsAtts = temp;
++      /*
++       * BUG INJECTION (UAF-010):
++       * After the namespace-attribute hash table has been reallocated,
++       * if there were exactly 3 prefixed attributes, free the newly
++       * assigned buffer.  The version-initialization loop and the
++       * duplicate-checking loop below then write/read freed memory.
++       */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++      MAGMA_LOG("EXPUAF10", nPrefixes == 3);
++#endif
++      if (nPrefixes == 3) {
++        free(temp);
++        MAGMA_FREE_LOG("EXPUAF10");
++      }
++#endif
+       version = 0; /* force re-initialization of m_nsAtts hash table */
+     }
+     /* using a version flag saves us from initializing m_nsAtts every time */

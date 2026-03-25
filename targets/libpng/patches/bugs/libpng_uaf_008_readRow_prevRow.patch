@@ -1,0 +1,26 @@
+diff --git a/pngread.c b/pngread.c
+index 8fa7d9f16..a92af9e14 100644
+--- a/pngread.c
++++ b/pngread.c
+@@ -558,6 +558,21 @@ png_read_row(png_structrp png_ptr, png_bytep row, png_bytep dsp_row)
+     */
+    memcpy(png_ptr->prev_row, png_ptr->row_buf, row_info.rowbytes + 1);
+ 
++   /*
++    * BUG INJECTION (UAF-008):
++    * After copying current row into prev_row at row 3, free prev_row.
++    * The next row's filter operation will read from freed prev_row memory.
++    */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++   MAGMA_LOG("PNGUAF08", png_ptr->row_number == 3);
++#endif
++   if (png_ptr->row_number == 3) {
++      png_free(png_ptr, png_ptr->prev_row);
++      MAGMA_FREE_LOG("PNGUAF08");
++   }
++#endif
++
+ #ifdef PNG_MNG_FEATURES_SUPPORTED
+    if ((png_ptr->mng_features_permitted & PNG_FLAG_MNG_FILTER_64) != 0 &&
+        (png_ptr->filter_type == PNG_INTRAPIXEL_DIFFERENCING))

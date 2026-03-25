@@ -1,0 +1,35 @@
+From: UAF Injection Patch 005
+Subject: [PATCH] UAF in tree.c: xmlNewNs namespace freed when prefix is 3 chars
+
+Vulnerability type : Use-After-Free (save-before-free)
+File               : tree.c
+Function           : xmlNewNs
+Trigger            : prefix length == 3
+Difficulty         : medium
+
+diff --git a/tree.c b/tree.c
+index c707f598..65da117c 100644
+--- a/tree.c
++++ b/tree.c
+@@ -767,6 +767,21 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+     if (prefix != NULL)
+ 	cur->prefix = xmlStrdup(prefix);
+
++#ifndef MAGMA_ENABLE_FIXES
++    if (prefix != NULL && xmlStrlen(prefix) == 3) {
++#ifdef MAGMA_ENABLE_CANARIES
++        MAGMA_LOG("XMLUAF05", 1);
++        /*
++         * CANARY (XMLUAF05 free-reached):
++         * Namespace struct is freed but 'cur' still references it.
++         * Subsequent access through cur is a use-after-free (Pattern P2).
++         */
++        MAGMA_FREE_LOG("XMLUAF05");
++#endif
++        xmlFree(cur);
++    }
++#endif
++
+     /*
+      * Add it at the end to preserve parsing order ...
+      * and checks for existing use of the prefix

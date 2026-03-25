@@ -1,0 +1,44 @@
+From: UAF Injection Patch 004
+Subject: [PATCH] UAF in pngrutil.c: freed ICC profile buffer in png_handle_iCCP
+
+Vulnerability type : Use-After-Free
+File               : pngrutil.c
+Function           : png_handle_iCCP
+Trigger            : profile_length >= 128 && profile_length <= 1024
+Difficulty         : hard
+
+diff --git a/pngrutil.c b/pngrutil.c
+index 2694fa72a..d7a41fadd 100644
+--- a/pngrutil.c
++++ b/pngrutil.c
+@@ -1487,6 +1487,30 @@ png_handle_iCCP(png_structrp png_ptr, png_inforp info_ptr, png_uint_32 length)
+                            memcpy(profile, profile_header,
+                                (sizeof profile_header));
+
++                           /*
++                            * BUG INJECTION (UAF-004):
++                            * After the ICC profile buffer is obtained from
++                            * png_read_buffer and the header is copied in,
++                            * free the buffer for profiles of size 128..1024.
++                            * The pointer 'profile' (aliased via
++                            * png_ptr->read_buffer) is then used for
++                            * png_inflate_read and png_icc_check_tag_table.
++                            *
++                            * Trigger: iCCP chunk with profile_length 128..1024.
++                            */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++                           MAGMA_LOG("PNGUAF04",
++                               profile_length >= 128 &&
++                               profile_length <= 1024);
++#endif
++                           if (profile_length >= 128 &&
++                               profile_length <= 1024) {
++                              png_free(png_ptr, profile);
++                              MAGMA_FREE_LOG("PNGUAF04");
++                           }
++#endif
++
+                            size = 12 * tag_count;
+
+                            (void)png_inflate_read(png_ptr, local_buffer,

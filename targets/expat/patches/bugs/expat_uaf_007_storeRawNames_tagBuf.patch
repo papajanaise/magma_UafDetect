@@ -1,0 +1,26 @@
+diff --git a/expat/lib/xmlparse.c b/expat/lib/xmlparse.c
+index b6c2eca..2a699e6 100644
+--- a/expat/lib/xmlparse.c
++++ b/expat/lib/xmlparse.c
+@@ -2606,6 +2606,21 @@ storeRawNames(XML_Parser parser) {
+             = (XML_Char *)temp + (tag->name.localPart - (XML_Char *)tag->buf);
+       tag->buf = temp;
+       tag->bufEnd = temp + bufSize;
++      /*
++       * BUG INJECTION (UAF-007):
++       * After the tag buffer realloc, if the raw name is >= 12 bytes
++       * and starts with 'q', free the new buffer.  memcpy below then
++       * writes into freed memory, and tag->rawName becomes dangling.
++       */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++      MAGMA_LOG("EXPUAF07", tag->rawNameLength >= 12 && tag->rawName[0] == 'q');
++#endif
++      if (tag->rawNameLength >= 12 && tag->rawName[0] == 'q') {
++        free(tag->buf);
++        MAGMA_FREE_LOG("EXPUAF07");
++      }
++#endif
+       rawNameBuf = temp + nameLen;
+     }
+     memcpy(rawNameBuf, tag->rawName, tag->rawNameLength);

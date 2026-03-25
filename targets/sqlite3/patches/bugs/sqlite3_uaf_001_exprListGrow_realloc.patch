@@ -1,0 +1,35 @@
+From: UAF Injection Patch 001
+Subject: [PATCH] UAF in src/expr.c: freed ExprList read after realloc in sqlite3ExprListAppendGrow
+
+Vulnerability type : Use-After-Free
+File               : src/expr.c
+Function           : sqlite3ExprListAppendGrow
+Trigger            : pList->nExpr == 8
+Difficulty         : medium
+
+diff --git a/src/expr.c b/src/expr.c
+index 4ad1902..805e3e4 100644
+--- a/src/expr.c
++++ b/src/expr.c
+@@ -1773,6 +1773,21 @@ SQLITE_NOINLINE ExprList *sqlite3ExprListAppendGrow(
+   }else{
+     pList = pNew;
+   }
++  /*
++   * BUG INJECTION (UAF-001): After realloc of ExprList, free the
++   * reallocated list when nExpr reaches 8.  pList is then dangling
++   * and the assignment to pItem below reads/writes freed memory.
++   * Pattern P5 (realloc-invalidation).
++   */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("SQLUAF01", pList->nExpr == 8);
++#endif
++  if( pList->nExpr == 8 ){
++    sqlite3DbFree(db, pList);
++    MAGMA_FREE_LOG("SQLUAF01");
++  }
++#endif
+   pItem = &pList->a[pList->nExpr++];
+   *pItem = zeroItem;
+   pItem->pExpr = pExpr;
