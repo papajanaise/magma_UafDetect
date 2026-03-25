@@ -32,6 +32,23 @@ for bc_file in "$OUT/targets/"*_instr.bc; do
     [ -f "$bc_file" ] || continue
     PROGRAM="$(basename "${bc_file%_instr.bc}")"
 
+    # Skip non-fuzzer binaries (no LLVMFuzzerTestOneInput)
+    if ! grep -q "LLVMFuzzerTestOneInput" "$bc_file"; then
+        echo "[*] Skipping $PROGRAM (not a fuzzer harness)"
+        continue
+    fi
+
+    # strip weak stub main() and any local getenv definition from the bitcode
+    nomain_bc="${bc_file%.bc}_nomain.bc"
+    ${LLVM_PATH}/llvm-dis "$bc_file" -o /tmp/_strip_main.ll
+    # Delete stub main and local getenv definition, then add getenv as
+    # an external declaration so call sites resolve to libc's getenv.
+    sed -e '/^define.*@main(/,/^}/d' \
+        -e '/^define.*@getenv(/,/^}/c declare ptr @getenv(ptr)' \
+        /tmp/_strip_main.ll > /tmp/_strip_main_clean.ll
+    ${LLVM_PATH}/llvm-as /tmp/_strip_main_clean.ll -o "$nomain_bc"
+    echo "[*] Stripped stub main + getenv from $(basename "$bc_file")"
+
     # afl-clang-lto accepts .bc input — it will:
     #   1. Run AFL's LTO instrumentation pass on the bitcode
     #   2. Compile to native code with deterministic edge IDs
@@ -39,11 +56,15 @@ for bc_file in "$OUT/targets/"*_instr.bc; do
     #
     # The .bc already contains magma + SVF symbols (from get-bc/llvm-link),
     # so do NOT re-link magma.o. Only add system libs not in the bitcode.
+    # libxml2 needs liblzma for XZ decompression support
+    EXTRA_LIBS=""
+    [[ "$PROGRAM" == *libxml2* ]] && EXTRA_LIBS="-llzma"
+
     $CXX \
-        "$bc_file" \
+        "$nomain_bc" \
         "$FUZZER/repo/libAFLDriver.a" \
         $LDFLAGS \
-        -lpthread -lm -lz -lrt -lstdc++ \
+        -lpthread -lm -lz -lrt -lstdc++ $EXTRA_LIBS \
         -o "$OUT/afl/${PROGRAM}"
 
     echo "[*] Final binary: $OUT/afl/${PROGRAM}"
@@ -59,11 +80,30 @@ for bc_file in "$OUT/targets/"*_instr.bc; do
     [ -f "$bc_file" ] || continue
     PROGRAM="$(basename "${bc_file%_instr.bc}")"
 
+    # Skip non-fuzzer binaries (no LLVMFuzzerTestOneInput)
+    if ! grep -q "LLVMFuzzerTestOneInput" "$bc_file"; then
+        echo "[*] Skipping $PROGRAM for CmpLog (not a fuzzer harness)"
+        continue
+    fi
+
+    # Reuse the _nomain.bc from Phase 3 if it exists
+    nomain_bc="${bc_file%.bc}_nomain.bc"
+    if [ ! -f "$nomain_bc" ]; then
+        ${LLVM_PATH}/llvm-dis "$bc_file" -o /tmp/_strip_main.ll
+        sed -e '/^define.*@main(/,/^}/d' \
+            -e '/^define.*@getenv(/,/^}/c declare ptr @getenv(ptr)' \
+            /tmp/_strip_main.ll > /tmp/_strip_main_clean.ll
+        ${LLVM_PATH}/llvm-as /tmp/_strip_main_clean.ll -o "$nomain_bc"
+    fi
+
+    EXTRA_LIBS=""
+    [[ "$PROGRAM" == *libxml2* ]] && EXTRA_LIBS="-llzma"
+
     $CXX \
-        "$bc_file" \
+        "$nomain_bc" \
         "$FUZZER/repo/libAFLDriver.a" \
         $LDFLAGS \
-        -lpthread -lm -lz -lrt -lstdc++ \
+        -lpthread -lm -lz -lrt -lstdc++ $EXTRA_LIBS \
         -o "$OUT/cmplog/${PROGRAM}"
 
     echo "[*] CmpLog binary: $OUT/cmplog/${PROGRAM}"

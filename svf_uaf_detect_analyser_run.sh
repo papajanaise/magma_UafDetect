@@ -29,6 +29,8 @@ export SINGULARITYENV_POLL=5
 export SINGULARITYENV_TIMEOUT=24h
 export SINGULARITYENV_AFFINITY=0
 
+mkdir -p /home/users/m/m.thielebein/magma_out/afl_uaf_detect/${TARGET}/${ANALYZER}/analyzer_logs/
+
 # --- Launch ---
 singularity exec \
     -B /home/users/m/m.thielebein/magma_UafDetect/fuzzers/afl_uaf_detect/repo/SVF_drivers:/magma/fuzzers/afl_uaf_detect/repo/SVF_drivers \
@@ -36,6 +38,6 @@ singularity exec \
     -B /home/users/m/m.thielebein/SVF:/SVF \
     /home/users/m/m.thielebein/magma_containers/magma_afl_uaf_detect_${TARGET}.sif \
     /magma/fuzzers/afl_uaf_detect/repo/SVF_drivers/build/${ANALYZER}-driver \
-    "/magma_out/targets/${PROGRAM}.bc" -o "/magma_out/targets/${PROGRAM}_instr.bc"
+    "/magma_out/targets/${PROGRAM}.bc" -o "/magma_out/targets/${PROGRAM}_instr.bc" > "/home/users/m/m.thielebein/magma_out/afl_uaf_detect/${TARGET}/${ANALYZER}/analyzer_logs/${PROGRAM}_analyser.log" 2>&1
 
 echo "Analyser finished."
