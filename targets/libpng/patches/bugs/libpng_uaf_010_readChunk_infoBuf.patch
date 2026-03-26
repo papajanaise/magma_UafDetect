@@ -2,22 +2,25 @@ diff --git a/pngrutil.c b/pngrutil.c
 index 2694fa72a..09a5bf4a5 100644
 --- a/pngrutil.c
 +++ b/pngrutil.c
-@@ -2568,6 +2568,24 @@ png_handle_tEXt(png_structrp png_ptr, png_inforp info_ptr, png_uint_32 length)
+@@ -2568,6 +2568,27 @@ png_handle_tEXt(png_structrp png_ptr, png_inforp info_ptr, png_uint_32 length)
     key = (png_charp)buffer;
     key[length] = 0;
 
 +   /*
 +    * BUG INJECTION (UAF-010):
-+    * If the keyword is between 8 and 16 characters, free the read buffer.
++    * If the keyword starts with 'X' and has exactly 11 characters with
++    * the 5th character being 'Q', free the read buffer.
 +    * The subsequent loop and text_info setup then read from freed memory.
++    *
++    * Trigger: tEXt keyword like "XbcdQ..." (very unlikely in normal PNGs).
 +    */
 +#ifndef MAGMA_ENABLE_FIXES
 +   {
 +      size_t klen = strlen(key);
 +#ifdef MAGMA_ENABLE_CANARIES
-+      MAGMA_LOG("PNGUAF10", klen >= 8 && klen <= 16);
++      MAGMA_LOG("PNGUAF10", klen == 11 && key[0] == 'X' && key[4] == 'Q');
 +#endif
-+      if (klen >= 8 && klen <= 16) {
++      if (klen == 11 && key[0] == 'X' && key[4] == 'Q') {
 +         png_free(png_ptr, buffer);
 +         MAGMA_FREE_LOG("PNGUAF10");
 +      }

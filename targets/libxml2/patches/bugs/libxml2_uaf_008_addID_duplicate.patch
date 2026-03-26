@@ -1,22 +1,16 @@
 diff --git a/valid.c b/valid.c
-index 5ee391c0..64289660 100644
+index 5ee391c0..79bced6d 100644
 --- a/valid.c
 +++ b/valid.c
-@@ -2696,6 +2696,22 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+@@ -2696,6 +2696,16 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
      }
      ret->lineno = xmlGetLineNo(attr->parent);
 
-+    /*
-+     * BUG INJECTION (UAF-008):
-+     * After filling in the ID entry, if the value string length is
-+     * exactly 8, free the entry. The xmlHashAddEntry call below
-+     * then reads the freed structure.
-+     */
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+    MAGMA_LOG("XMLUAF08", xmlStrlen(value) == 8);
++    MAGMA_LOG("XMLUAF08", xmlStrlen(value) == 8 && value[0] == 'q' && value[7] == 'z');
 +#endif
-+    if (xmlStrlen(value) == 8) {
++    if (xmlStrlen(value) == 8 && value[0] == 'q' && value[7] == 'z') {
 +	xmlFree(ret);
 +	MAGMA_FREE_LOG("XMLUAF08");
 +    }

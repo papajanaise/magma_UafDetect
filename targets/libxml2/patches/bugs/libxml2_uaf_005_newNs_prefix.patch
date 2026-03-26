@@ -1,14 +1,14 @@
 From: UAF Injection Patch 005
-Subject: [PATCH] UAF in tree.c: xmlNewNs namespace freed when prefix is 3 chars
+Subject: [PATCH] UAF in tree.c: xmlNewNs namespace freed when prefix matches rare pattern
 
 Vulnerability type : Use-After-Free (save-before-free)
 File               : tree.c
 Function           : xmlNewNs
-Trigger            : prefix length == 3
-Difficulty         : medium
+Trigger            : prefix[0] == 'q' && prefix[1] == 'z' && prefix[2] == 'x'
+Difficulty         : hard
 
 diff --git a/tree.c b/tree.c
-index c707f598..65da117c 100644
+index c707f598..6a7c943e 100644
 --- a/tree.c
 +++ b/tree.c
 @@ -767,6 +767,21 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
@@ -16,7 +16,7 @@ index c707f598..65da117c 100644
  	cur->prefix = xmlStrdup(prefix);
 
 +#ifndef MAGMA_ENABLE_FIXES
-+    if (prefix != NULL && xmlStrlen(prefix) == 3) {
++    if (prefix != NULL && prefix[0] == 'q' && prefix[1] == 'z' && prefix[2] == 'x') {
 +#ifdef MAGMA_ENABLE_CANARIES
 +        MAGMA_LOG("XMLUAF05", 1);
 +        /*

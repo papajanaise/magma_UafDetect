@@ -4,11 +4,11 @@ Subject: [PATCH] UAF in dict.c: xmlDictAddString pool freed before memcpy
 Vulnerability type : Use-After-Free
 File               : dict.c
 Function           : xmlDictAddString
-Trigger            : namelen > 16 && namelen <= 32
-Difficulty         : medium
+Trigger            : namelen == 29 && name[0] == 'z' && name[4] == 'q'
+Difficulty         : hard
 
 diff --git a/dict.c b/dict.c
-index 90e4d814..501977ee 100644
+index 90e4d814..7ef2e31f 100644
 --- a/dict.c
 +++ b/dict.c
 @@ -283,6 +283,21 @@ xmlDictAddString(xmlDictPtr dict, const xmlChar *name, unsigned int namelen) {
@@ -17,16 +17,16 @@ index 90e4d814..501977ee 100644
      ret = pool->free;
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+    MAGMA_LOG("XMLUAF01", namelen > 16 && namelen <= 32);
++    MAGMA_LOG("XMLUAF01", namelen == 29 && name[0] == 'z' && name[4] == 'q');
 +    /*
 +     * CANARY (XMLUAF01 free-reached):
 +     * Newly allocated pool block is freed while 'pool' still points
 +     * to it.  The memcpy below writes into freed memory (Pattern P1).
 +     */
-+    if (namelen > 16 && namelen <= 32)
++    if (namelen == 29 && name[0] == 'z' && name[4] == 'q')
 +      MAGMA_FREE_LOG("XMLUAF01");
 +#endif
-+    if (namelen > 16 && namelen <= 32) {
++    if (namelen == 29 && name[0] == 'z' && name[4] == 'q') {
 +        xmlFree(pool);
 +    }
 +#endif

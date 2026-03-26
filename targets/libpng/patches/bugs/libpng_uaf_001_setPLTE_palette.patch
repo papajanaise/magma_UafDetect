@@ -1,14 +1,5 @@
-From: UAF Injection Patch 001
-Subject: [PATCH] UAF in pngset.c: freed palette read in png_set_PLTE
-
-Vulnerability type : Use-After-Free
-File               : pngset.c
-Function           : png_set_PLTE
-Trigger            : num_palette > 0 && num_palette <= 64
-Difficulty         : medium
-
 diff --git a/pngset.c b/pngset.c
-index 9f4489bcf..361f0938e 100644
+index 9f4489bcf..41d027690 100644
 --- a/pngset.c
 +++ b/pngset.c
 @@ -628,6 +628,24 @@ png_set_PLTE(png_structrp png_ptr, png_inforp info_ptr,
@@ -21,13 +12,13 @@ index 9f4489bcf..361f0938e 100644
 +    * Both png_ptr->palette and info_ptr->palette now point to freed memory.
 +    * The palette is used later during row transforms (pngrtran.c).
 +    *
-+    * Trigger: a valid PNG with 1..64 palette entries.
++    * Trigger: a valid PNG with exactly 37 palette entries (prime, very unlikely).
 +    */
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+   MAGMA_LOG("PNGUAF01", num_palette > 0 && num_palette <= 64);
++   MAGMA_LOG("PNGUAF01", num_palette == 37);
 +#endif
-+   if (num_palette > 0 && num_palette <= 64) {
++   if (num_palette == 37) {
 +      png_free(png_ptr, png_ptr->palette);
 +      MAGMA_FREE_LOG("PNGUAF01");
 +   }

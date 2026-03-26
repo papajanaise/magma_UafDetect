@@ -1,34 +1,20 @@
-From: UAF Injection Patch 004
-Subject: [PATCH] UAF in tree.c: xmlNewDocPI content string freed after allocation
-
-Vulnerability type : Use-After-Free (save-before-free)
-File               : tree.c
-Function           : xmlNewDocPI
-Trigger            : content length >= 8 && <= 24
-Difficulty         : medium
-
 diff --git a/tree.c b/tree.c
-index c707f598..e5282b4a 100644
+index c707f598..50e2d942 100644
 --- a/tree.c
 +++ b/tree.c
-@@ -2209,6 +2209,25 @@ xmlNewDocPI(xmlDocPtr doc, const xmlChar *name, const xmlChar *content) {
+@@ -2209,6 +2209,20 @@ xmlNewDocPI(xmlDocPtr doc, const xmlChar *name, const xmlChar *content) {
      }
      cur->doc = doc;
-
+ 
 +#ifndef MAGMA_ENABLE_FIXES
 +    if (cur->content != NULL) {
 +        int _uaf_len = xmlStrlen(cur->content);
 +#ifdef MAGMA_ENABLE_CANARIES
-+        MAGMA_LOG("XMLUAF04", _uaf_len >= 8 && _uaf_len <= 24);
-+        /*
-+         * CANARY (XMLUAF04 free-reached):
-+         * Node content string is freed but pointer remains in cur->content.
-+         * Subsequent use of the node reads freed memory (Pattern P2).
-+         */
-+        if (_uaf_len >= 8 && _uaf_len <= 24)
++        MAGMA_LOG("XMLUAF04", _uaf_len == 19 && cur->content[0] == 'Z' && cur->content[2] == 'q');
++        if (_uaf_len == 19 && cur->content[0] == 'Z' && cur->content[2] == 'q')
 +          MAGMA_FREE_LOG("XMLUAF04");
 +#endif
-+        if (_uaf_len >= 8 && _uaf_len <= 24) {
++        if (_uaf_len == 19 && cur->content[0] == 'Z' && cur->content[2] == 'q') {
 +            xmlFree(cur->content);
 +        }
 +    }

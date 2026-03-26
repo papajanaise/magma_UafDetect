@@ -1,29 +1,23 @@
-From: UAF Injection Patch 003
-Subject: [PATCH] UAF in src/build.c: freed column array after realloc in sqlite3AddColumn
-
-Vulnerability type : Use-After-Free
-File               : src/build.c
-Function           : sqlite3AddColumn
-Trigger            : p->nCol == 8
-Difficulty         : medium
-
+diff --git a/src/build.c b/src/build.c
+index 5bf5680..327f999 100644
 --- a/src/build.c
 +++ b/src/build.c
-@@ -1407,6 +1407,21 @@
+@@ -1407,6 +1407,22 @@ void sqlite3AddColumn(Parse *pParse, Token *pName, Token *pType){
        return;
      }
      p->aCol = aNew;
 +    /*
 +     * BUG INJECTION (UAF-003): After reallocating the column array,
-+     * free it when the table has exactly 8 columns.  p->aCol is then
-+     * dangling and the memset/assignment below corrupts freed memory.
++     * free it when the table has exactly 24 columns AND the first column
++     * name starts with 'q'.  p->aCol is then dangling and the
++     * memset/assignment below corrupts freed memory.
 +     * Pattern P5 (realloc-invalidation).
 +     */
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+    MAGMA_LOG("SQLUAF03", p->nCol == 8);
++    MAGMA_LOG("SQLUAF03", p->nCol == 24 && p->aCol[0].zName[0] == 'q');
 +#endif
-+    if( p->nCol == 8 ){
++    if( p->nCol == 24 && p->aCol[0].zName[0] == 'q' ){
 +      sqlite3DbFree(db, p->aCol);
 +      MAGMA_FREE_LOG("SQLUAF03");
 +    }

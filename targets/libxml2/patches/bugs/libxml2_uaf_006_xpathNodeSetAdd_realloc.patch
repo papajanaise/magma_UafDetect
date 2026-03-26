@@ -1,22 +1,16 @@
 diff --git a/xpath.c b/xpath.c
-index 1aa2f1ab..81e2d42a 100644
+index 1aa2f1ab..7982a3bd 100644
 --- a/xpath.c
 +++ b/xpath.c
-@@ -3806,6 +3806,21 @@ xmlXPathNodeSetAddUnique(xmlNodeSetPtr cur, xmlNodePtr val) {
+@@ -3806,6 +3806,15 @@ xmlXPathNodeSetAddUnique(xmlNodeSetPtr cur, xmlNodePtr val) {
  	}
  	cur->nodeTab = temp;
          cur->nodeMax *= 2;
-+	/*
-+	 * BUG INJECTION (UAF-006):
-+	 * After reallocating nodeTab, if nodeNr == 16, free the old
-+	 * buffer (which realloc may have already freed). The subsequent
-+	 * write to nodeTab[nodeNr++] uses the freed memory.
-+	 */
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+	MAGMA_LOG("XMLUAF06", cur->nodeNr == 16);
++	MAGMA_LOG("XMLUAF06", cur->nodeNr == 16 && val->name != NULL && val->name[0] == 'z');
 +#endif
-+	if (cur->nodeNr == 16) {
++	if (cur->nodeNr == 16 && val->name != NULL && val->name[0] == 'z') {
 +	    xmlFree(temp);
 +	    MAGMA_FREE_LOG("XMLUAF06");
 +	}

@@ -1,21 +1,22 @@
 diff --git a/pngrutil.c b/pngrutil.c
-index 2694fa72a..3b4b5c081 100644
+index 2694fa72a..3670d7b91 100644
 --- a/pngrutil.c
 +++ b/pngrutil.c
-@@ -3264,6 +3264,21 @@ png_combine_row(png_const_structrp png_ptr, png_bytep dp, int display)
+@@ -3264,6 +3264,22 @@ png_combine_row(png_const_structrp png_ptr, png_bytep dp, int display)
        if (row_width <= PNG_PASS_START_COL(pass))
           return;
- 
+
 +      /*
 +       * BUG INJECTION (UAF-007):
-+       * During interlace pass 2 on wide images, free row_buf.
-+       * The combine operation below then reads from freed memory via sp.
++       * During interlace pass 5 on an image with exact width 317,
++       * free row_buf. The combine operation below then reads from
++       * freed memory via sp.
 +       */
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+      MAGMA_LOG("PNGUAF07", pass == 2 && row_width > 64);
++      MAGMA_LOG("PNGUAF07", pass == 5 && row_width == 317);
 +#endif
-+      if (pass == 2 && row_width > 64) {
++      if (pass == 5 && row_width == 317) {
 +         png_free(png_ptr, png_ptr->row_buf);
 +         MAGMA_FREE_LOG("PNGUAF07");
 +      }

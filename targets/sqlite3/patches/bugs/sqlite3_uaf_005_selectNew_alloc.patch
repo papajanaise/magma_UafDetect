@@ -1,32 +1,22 @@
-From: UAF Injection Patch 005
-Subject: [PATCH] UAF in src/select.c: freed Select struct returned from sqlite3SelectNew
-
-Vulnerability type : Use-After-Free
-File               : src/select.c
-Function           : sqlite3SelectNew
-Trigger            : pAllocated != 0 && pWhere != 0
-Difficulty         : easy
-
 diff --git a/src/select.c b/src/select.c
-index d368392..fe21e46 100644
+index d368392..0332d25 100644
 --- a/src/select.c
 +++ b/src/select.c
-@@ -169,6 +169,22 @@ Select *sqlite3SelectNew(
+@@ -169,6 +169,21 @@ Select *sqlite3SelectNew(
    }else{
      assert( pNew->pSrc!=0 || pParse->nErr>0 );
    }
 +  /*
 +   * BUG INJECTION (UAF-005): After fully populating the Select struct,
-+   * free it when a WHERE clause is present.  pAllocated still holds the
-+   * dangling pointer and is returned to the caller, who will read/write
-+   * the freed Select node.
++   * free it when a WHERE clause, GROUP BY, HAVING, and ORDER BY are all
++   * present simultaneously (complex multi-clause query).
 +   * Pattern P2 (save-before-free).
 +   */
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+  MAGMA_LOG("SQLUAF05", pAllocated != 0 && pWhere != 0);
++  MAGMA_LOG("SQLUAF05", pAllocated != 0 && pWhere != 0 && pGroupBy != 0 && pHaving != 0 && pOrderBy != 0);
 +#endif
-+  if( pAllocated && pWhere ){
++  if( pAllocated && pWhere && pGroupBy && pHaving && pOrderBy ){
 +    sqlite3DbFree(pParse->db, pAllocated);
 +    MAGMA_FREE_LOG("SQLUAF05");
 +  }

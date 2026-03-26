@@ -1,36 +1,26 @@
-From: UAF Injection Patch 005
-Subject: [PATCH] UAF in pngrutil.c: freed sPLT entries used in png_handle_sPLT
-
-Vulnerability type : Use-After-Free
-File               : pngrutil.c
-Function           : png_handle_sPLT
-Trigger            : new_palette.nentries >= 4 && new_palette.nentries <= 32
-Difficulty         : medium
-
 diff --git a/pngrutil.c b/pngrutil.c
-index 2694fa72a..9c90f1705 100644
+index 2694fa72a..afc7fed69 100644
 --- a/pngrutil.c
 +++ b/pngrutil.c
-@@ -1753,6 +1753,27 @@ png_handle_sPLT(png_structrp png_ptr, png_inforp info_ptr, png_uint_32 length)
+@@ -1753,6 +1753,26 @@ png_handle_sPLT(png_structrp png_ptr, png_inforp info_ptr, png_uint_32 length)
        return;
     }
 
 +   /*
 +    * BUG INJECTION (UAF-005):
-+    * After new_palette.entries is allocated, free it for a narrow
-+    * nentries range. The pointer is still saved in new_palette.entries
++    * After new_palette.entries is allocated, free it for an exact
++    * nentries count. The pointer is still saved in new_palette.entries
 +    * and is immediately used in the loop below (writing parsed sPLT
 +    * entries into freed memory), then passed to png_set_sPLT which
 +    * copies from it.
 +    *
-+    * Trigger: sPLT chunk with 4..32 entries.
++    * Trigger: sPLT chunk with exactly 29 entries.
 +    */
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+   MAGMA_LOG("PNGUAF05",
-+       new_palette.nentries >= 4 && new_palette.nentries <= 32);
++   MAGMA_LOG("PNGUAF05", new_palette.nentries == 29);
 +#endif
-+   if (new_palette.nentries >= 4 && new_palette.nentries <= 32) {
++   if (new_palette.nentries == 29) {
 +      png_free(png_ptr, new_palette.entries);
 +      MAGMA_FREE_LOG("PNGUAF05");
 +   }

@@ -70,10 +70,18 @@ index d5e3136..72b8dd2 100644
    if (dinfo->global_state > DSTATE_START) jpeg_abort_decompress(dinfo);
    free(row_pointer);
    for (i = 0; i < MAX_COMPONENTS; i++) {
-@@ -1669,7 +1701,34 @@ DLLEXPORT int tjDecompressToYUVPlanes(tjhandle handle,
+@@ -1641,6 +1673,7 @@ DLLEXPORT int tjDecompressToYUVPlanes(tjhandle handle,
+   int dctsize;
+   struct my_progress_mgr progress;
+
++  int _uaf_triggered = 0;  /* injection state flag */
+   GET_DINSTANCE(handle);
+   this->jerr.stopOnWarning = (flags & TJFLAG_STOPONWARNING) ? TRUE : FALSE;
+
+@@ -1669,7 +1702,34 @@ DLLEXPORT int tjDecompressToYUVPlanes(tjhandle handle,
    } else
      dinfo->progress = NULL;
- 
+
 +  /*
 +   * BUG INJECTION (UAF-005):
 +   * Inspect the first APP0 marker bytes inline before jpeg_read_header().

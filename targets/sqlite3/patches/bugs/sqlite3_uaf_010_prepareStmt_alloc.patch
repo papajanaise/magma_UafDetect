@@ -1,31 +1,23 @@
-From: UAF Injection Patch 010
-Subject: [PATCH] UAF in src/prepare.c: double-free of SQL copy in sqlite3Prepare
-
-Vulnerability type : Use-After-Free (double-free)
-File               : src/prepare.c
-Function           : sqlite3Prepare
-Trigger            : SQL statement length between 32 and 64 bytes
-Difficulty         : medium
-
 diff --git a/src/prepare.c b/src/prepare.c
-index 6dcb384..76d4af6 100644
+index 6dcb384..a292a2c 100644
 --- a/src/prepare.c
 +++ b/src/prepare.c
-@@ -721,6 +721,21 @@ static int sqlite3Prepare(
+@@ -721,6 +721,22 @@ static int sqlite3Prepare(
        sqlite3RunParser(&sParse, zSqlCopy, &zErrMsg);
        sParse.zTail = &zSql[sParse.zTail-zSqlCopy];
        sqlite3DbFree(db, zSqlCopy);
 +      /*
 +       * BUG INJECTION (UAF-010):
-+       * When the SQL length is between 32 and 64, free the SQL copy
-+       * a second time after it was already freed above.  This is a
-+       * double-free; the flag (zSqlCopy) is not checked/nulled.
++       * When the SQL length is between 900 and 950 bytes AND the SQL
++       * starts with "WITH", free the SQL copy a second time after it was
++       * already freed above.  This is a double-free; the flag (zSqlCopy)
++       * is not checked/nulled.
 +       */
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+      MAGMA_LOG("SQLUAF10", nBytes >= 32 && nBytes <= 64);
++      MAGMA_LOG("SQLUAF10", nBytes >= 900 && nBytes <= 950 && zSql[0]=='W' && zSql[1]=='I' && zSql[2]=='T' && zSql[3]=='H');
 +#endif
-+      if( nBytes >= 32 && nBytes <= 64 ){
++      if( nBytes >= 900 && nBytes <= 950 && zSql[0]=='W' && zSql[1]=='I' && zSql[2]=='T' && zSql[3]=='H' ){
 +        sqlite3DbFree(db, zSqlCopy);
 +        MAGMA_FREE_LOG("SQLUAF10");
 +      }

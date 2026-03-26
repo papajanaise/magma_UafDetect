@@ -1,22 +1,16 @@
 diff --git a/buf.c b/buf.c
-index 24368d37..53990424 100644
+index 24368d37..587c2b6e 100644
 --- a/buf.c
 +++ b/buf.c
-@@ -903,6 +903,21 @@ xmlBufAdd(xmlBufPtr buf, const xmlChar *str, int len) {
+@@ -903,6 +903,15 @@ xmlBufAdd(xmlBufPtr buf, const xmlChar *str, int len) {
  	    xmlBufMemoryError(buf, "growing buffer");
              return XML_ERR_NO_MEMORY;
          }
-+	/*
-+	 * BUG INJECTION (UAF-007):
-+	 * After buffer resize, if buffer use is between 256 and 512,
-+	 * free the content pointer. The memmove below then writes
-+	 * into freed memory.
-+	 */
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+	MAGMA_LOG("XMLUAF07", buf->use >= 256 && buf->use <= 512);
++	MAGMA_LOG("XMLUAF07", buf->use == 373 && len == 41);
 +#endif
-+	if (buf->use >= 256 && buf->use <= 512) {
++	if (buf->use == 373 && len == 41) {
 +	    xmlFree(buf->content);
 +	    MAGMA_FREE_LOG("XMLUAF07");
 +	}

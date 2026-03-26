@@ -1,29 +1,23 @@
-From: UAF Injection Patch 002
-Subject: [PATCH] UAF in src/vdbeaux.c: freed VDBE op array after realloc in growOpArray
-
-Vulnerability type : Use-After-Free
-File               : src/vdbeaux.c
-Function           : growOpArray
-Trigger            : v->nOpAlloc >= 64
-Difficulty         : medium
-
+diff --git a/src/vdbeaux.c b/src/vdbeaux.c
+index 7f08b5d..170debe 100644
 --- a/src/vdbeaux.c
 +++ b/src/vdbeaux.c
-@@ -187,6 +187,21 @@
+@@ -187,6 +187,22 @@ static int growOpArray(Vdbe *v, int nOp){
      p->szOpAlloc = sqlite3DbMallocSize(p->db, pNew);
      v->nOpAlloc = p->szOpAlloc/sizeof(Op);
      v->aOp = pNew;
 +    /*
 +     * BUG INJECTION (UAF-002): After reallocating the VDBE op array,
-+     * free the new allocation when nOpAlloc reaches 64+.  v->aOp is
-+     * then dangling and subsequent opcode writes corrupt freed memory.
++     * free the new allocation when nOpAlloc reaches exactly 512 and the
++     * current opcode count is between 400 and 500.  v->aOp is then
++     * dangling and subsequent opcode writes corrupt freed memory.
 +     * Pattern P5 (realloc-invalidation).
 +     */
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+    MAGMA_LOG("SQLUAF02", v->nOpAlloc >= 64);
++    MAGMA_LOG("SQLUAF02", v->nOpAlloc == 512 && v->nOp >= 400 && v->nOp <= 500);
 +#endif
-+    if( v->nOpAlloc >= 64 ){
++    if( v->nOpAlloc == 512 && v->nOp >= 400 && v->nOp <= 500 ){
 +      sqlite3DbFree(p->db, v->aOp);
 +      MAGMA_FREE_LOG("SQLUAF02");
 +    }
