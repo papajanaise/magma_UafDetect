@@ -7,6 +7,7 @@
 #SBATCH --partition=standard
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=m.thielebein@tu-berlin.de
+#SBATCH --exclude=gpu[001-066]
 
 module load singularity
 set -euo pipefail

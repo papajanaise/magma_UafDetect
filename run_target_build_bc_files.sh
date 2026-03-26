@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH -o svf_analyser.%j.%N.out
-#SBATCH -J svf-analyser
+#SBATCH -o bc_file_build.%j.%N.out
+#SBATCH -J bc-file-builder
 #SBATCH --ntasks=1
 #SBATCH --mem=16G
 #SBATCH --time=25:00:00
@@ -15,30 +15,28 @@ ulimit -v unlimited
 
 # --- These come from: sbatch --export=TARGET=...,PROGRAM=... ---
 : "${TARGET:?Set TARGET via --export}"
-: "${PROGRAM:?Set PROGRAM via --export}"
+: "${FUZZER:?Set FUZZER via --export}"
 : "${ANALYZER:?Set ANALYZER via --export}"
 
 echo "=== SVF Analyser ==="
 echo "Target:  $TARGET"
 echo "Analyzer: $ANALYZER"
-echo "Program: $PROGRAM"
+echo "Program: $FUZZER"
 echo "======================"
 
 # --- Environment for the container ---
-export SINGULARITYENV_PROGRAM="$PROGRAM"
-export SINGULARITYENV_POLL=5
-export SINGULARITYENV_TIMEOUT=24h
-export SINGULARITYENV_AFFINITY=0
-
-mkdir -p /home/users/m/m.thielebein/magma_out/afl_uaf_detect/${TARGET}/${ANALYZER}/analyzer_logs/
+export SINGULARITYENV_FUZZER="/magma/fuzzers/${FUZZER}"
+export SINGULARITYENV_TARGET="/magma/targets/${TARGET}"
+export SINGULARITYENV_MAGMA="/magma/magma"
+export SINGULARITYENV_OUT="/magma_out"
 
 # --- Launch ---
 singularity exec \
-    -B /home/users/m/m.thielebein/magma_UafDetect/fuzzers/afl_uaf_detect/repo/SVF_drivers:/magma/fuzzers/afl_uaf_detect/repo/SVF_drivers \
+    -B /home/users/m/m.thielebein/magma_UafDetect/fuzzers/afl_uaf_detect:/magma/fuzzers/afl_uaf_detect \
+    -B /home/users/m/m.thielebein/magma_UafDetect/targets/${TARGET}:/magma/targets/${TARGET} \
     -B /home/users/m/m.thielebein/magma_out/afl_uaf_detect/${TARGET}/${ANALYZER}:/magma_out  \
     -B /home/users/m/m.thielebein/SVF:/SVF \
     /home/users/m/m.thielebein/magma_containers/magma_afl_uaf_detect_${TARGET}.sif \
-    /magma/fuzzers/afl_uaf_detect/repo/SVF_drivers/build/${ANALYZER}-driver \
-    "/magma_out/targets/${PROGRAM}.bc" -o "/magma_out/targets/${PROGRAM}_instr.bc" > "/home/users/m/m.thielebein/magma_out/afl_uaf_detect/${TARGET}/${ANALYZER}/analyzer_logs/${PROGRAM}_analyser.log" 2>&1
+    /magma/fuzzers/afl_uaf_detect/build_bc_files.sh
 
-echo "Analyser finished."
+echo "Building BC files finished."
