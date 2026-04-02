@@ -52,13 +52,21 @@ for fuzzer_dir in "$RESULTS_DIR"/*/; do
             [ -d "$program_dir" ] || continue
             program=$(basename "$program_dir")
 
-            for run_dir in "$program_dir"/*/; do
-                [ -d "$run_dir" ] || continue
-                run_id=$(basename "$run_dir")
-                # run dirs should be numeric
-                case "$run_id" in
+            # Find the highest-numbered run directory
+            max_run=""
+            for _d in "$program_dir"/*/; do
+                [ -d "$_d" ] || continue
+                _id=$(basename "$_d")
+                case "$_id" in
                     *[!0-9]*) continue ;;
                 esac
+                if [ -z "$max_run" ] || [ "$_id" -gt "$max_run" ]; then
+                    max_run="$_id"
+                fi
+            done
+            [ -z "$max_run" ] && continue
+            run_id="$max_run"
+            run_dir="$program_dir/$run_id/"
 
                 monitor_dir="$run_dir/monitor"
                 [ -d "$monitor_dir" ] || continue
@@ -148,7 +156,6 @@ for fuzzer_dir in "$RESULTS_DIR"/*/; do
                 # Clear associative arrays
                 unset first_reached first_triggered first_free seen_bugs
 
-            done
         done
     done
 done

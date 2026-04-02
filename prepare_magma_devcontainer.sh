@@ -6,10 +6,11 @@ for var in $(env | grep -o '^AFL_[^=]*'); do
 done
 
 /magma/magma/prebuild.sh
-#${FUZZER}/fetch.sh 
-${FUZZER}/build.sh  #only once per fuzzer
-/magma/magma/apply_patches.sh #only once per target
-${FUZZER}/build_bc_files.sh  #only for afl_uaf_detect!
-${FUZZER}/static_analysis_instrument.sh #only for afl_uaf_detect!
-${FUZZER}/afl_instrument.sh
-/magma/magma/run.sh
+
+if [ "$FUZZER_NAME" == "afl_uaf_detect" ]; then
+    ${FUZZER}/build_bc_files.sh  
+    ${FUZZER}/static_analysis_instrument.sh
+    ${FUZZER}/afl_instrument.sh
+else
+    ${FUZZER}/instrument.sh
+fi

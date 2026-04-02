@@ -1,6 +1,4 @@
 #!/bin/bash
-#SBATCH -o magma_campaign.%j.%N.out
-#SBATCH -J magma-fuzz
 #SBATCH --ntasks=1
 #SBATCH --mem=16G
 #SBATCH --time=24:00:00
@@ -58,7 +56,7 @@ export SINGULARITYENV_OUT="/magma_out"
 export SINGULARITYENV_SHARED="/magma_shared"
 export SINGULARITYENV_ARGS="$EXPECTED_ARGS"
 export SINGULARITYENV_POLL=5
-export SINGULARITYENV_TIMEOUT=86400 #-> 24h          #3600  #1h
+export SINGULARITYENV_TIMEOUT=7200 #2h #86400 #-> 24h          #3600  #1h
 
 # --- Launch ---
 singularity exec \

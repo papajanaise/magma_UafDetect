@@ -30,13 +30,21 @@ export SINGULARITYENV_TARGET="/magma/targets/${TARGET}"
 export SINGULARITYENV_MAGMA="/magma/magma"
 export SINGULARITYENV_OUT="/magma_out"
 
+if [ "$FUZZER" == "afl_uaf_detect" ]; then
+    export SINGULARITYENV_ANALYZER="$ANALYZER"
+    RUN_SCRIPT="/magma/fuzzers/${FUZZER}/build_bc_files.sh"
+else
+    export ANALYZER=""
+    RUN_SCRIPT="/magma/fuzzers/${FUZZER}/instrument.sh"
+fi
+
 # --- Launch ---
 singularity exec \
-    -B /home/users/m/m.thielebein/magma_UafDetect/fuzzers/afl_uaf_detect:/magma/fuzzers/afl_uaf_detect \
+    -B /home/users/m/m.thielebein/magma_UafDetect/fuzzers/${FUZZER}:/magma/fuzzers/${FUZZER} \
     -B /home/users/m/m.thielebein/magma_UafDetect/targets/${TARGET}:/magma/targets/${TARGET} \
-    -B /home/users/m/m.thielebein/magma_out/afl_uaf_detect/${TARGET}/${ANALYZER}:/magma_out  \
+    -B /home/users/m/m.thielebein/magma_out/${FUZZER}/${TARGET}/${ANALYZER}:/magma_out  \
     -B /home/users/m/m.thielebein/SVF:/SVF \
-    /home/users/m/m.thielebein/magma_containers/magma_afl_uaf_detect_${TARGET}.sif \
-    /magma/fuzzers/afl_uaf_detect/build_bc_files.sh
+    /home/users/m/m.thielebein/magma_containers/magma_${FUZZER}_${TARGET}.sif \
+    ${RUN_SCRIPT}
 
 echo "Building BC files finished."

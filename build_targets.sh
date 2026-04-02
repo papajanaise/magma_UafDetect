@@ -1,0 +1,50 @@
+#!/bin/bash
+
+export ANALYZER="free_finder"
+export TARGETS="expat libjpeg-turbo libpng libxml2 sqlite3"
+
+LOG_DIR="/home/users/m/m.thielebein/magma_campaign_logs/build_jobs/$(date '+%Y%m%d_%H%M%S')"
+mkdir -p "$LOG_DIR"
+
+PIPELINE_FILE="/home/users/m/m.thielebein/magma_UafDetect/.pipeline_jobs"
+> "$PIPELINE_FILE"
+
+TARGETS_DIR="/home/users/m/m.thielebein/magma_UafDetect/targets"
+
+# Clean all target repos on the host before submitting any jobs.
+# This prevents stale build artifacts from interfering with fresh builds.
+for target in $TARGETS; do
+    echo "Cleaning $target repo..."
+    git -C "$TARGETS_DIR/$target/repo" clean -fdx
+    git -C "$TARGETS_DIR/$target/repo" checkout -- .
+done
+rm -rf "$TARGETS_DIR/sqlite3/work" "$TARGETS_DIR/expat/install"
+
+# Use associative array to track the last job per target, so that
+# builds for the same target (different fuzzers) run sequentially.
+# This prevents concurrent writes to the same bind-mounted source repo.
+declare -A LAST_JOB_FOR_TARGET
+
+for fuzzer in "afl_uaf_detect" "aflplusplus_lto_asan"; do
+    export FUZZER_NAME="$fuzzer"
+    for target in $TARGETS; do
+        export TARGET_NAME="$target"
+
+        DEP_ARGS=""
+        if [[ -n "${LAST_JOB_FOR_TARGET[$target]}" ]]; then
+            DEP_ARGS="--dependency=afterany:${LAST_JOB_FOR_TARGET[$target]}"
+        fi
+
+        # Submit the build job and capture its ID
+        BUILD_JOB=$(sbatch --parsable \
+            $DEP_ARGS \
+            --export=FUZZER_NAME="${FUZZER_NAME}",TARGET_NAME="${TARGET_NAME}",ANALYZER="${ANALYZER}" \
+            --job-name="build_${FUZZER_NAME}_${TARGET_NAME}" \
+            -o "${LOG_DIR}/build_${FUZZER_NAME}_${TARGET_NAME}.%j.out" \
+            /home/users/m/m.thielebein/magma_UafDetect/sbatch_full_build_pipeline.sh)
+        echo "Submitted build job $BUILD_JOB for ${FUZZER_NAME}/${TARGET_NAME}"
+        echo "$BUILD_JOB build ${FUZZER_NAME}/${TARGET_NAME}" >> "$PIPELINE_FILE"
+
+        LAST_JOB_FOR_TARGET[$target]="$BUILD_JOB"
+    done
+done
