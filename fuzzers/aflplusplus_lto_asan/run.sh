@@ -16,6 +16,7 @@ mkdir -p "$SHARED/findings"
 
 export AFL_SKIP_CPUFREQ=1
 export AFL_NO_AFFINITY=1
+export AFL_FORKSRV_INIT_TMOUT=30000
 export ASAN_OPTIONS="abort_on_error=1:detect_leaks=0:malloc_context_size=0:symbolize=0:allocator_may_return_null=1:use_sigaltstack=0"
 
 # Derive TARGET_NAME from $TARGET path
@@ -78,5 +79,5 @@ fi
 
 mkdir -p "$SHARED/log"
 
-"$FUZZER/repo/afl-fuzz" -M main -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
+"$FUZZER/repo/afl-fuzz" -M main -m none -t 5000+ -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
     "${flag_cmplog[@]}" $FUZZARGS -- "$OUT/afl/targets/$PROGRAM" $ARGS 2>&1 | tee "$SHARED/log/afl_output.log"

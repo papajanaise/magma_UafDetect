@@ -13,6 +13,8 @@ set -e
 cd "$TARGET/repo/expat"
 
 # --- configure & build libexpat as a static library ---
+make distclean 2>/dev/null || true
+
 ./buildconf.sh
 
 ./configure \

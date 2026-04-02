@@ -22,7 +22,7 @@ export AFL_NO_X86=1
 export PYTHON_INCLUDE=/
 export AFL_USE_UAF_DETECT=1
 make clean
-make -j$(nproc) || exit 1
+make -j$(nproc) ASAN_BUILD=1 || exit 1
 make -C utils/aflpp_driver || exit 1
 
 mkdir -p "$OUT/afl" "$OUT/cmplog"

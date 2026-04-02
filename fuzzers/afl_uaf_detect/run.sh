@@ -18,6 +18,7 @@ export AFL_SKIP_CPUFREQ=1
 export AFL_NO_AFFINITY=1
 export AFL_MAP_SIZE=2097152
 export AFL_USE_UAF_DETECT=1
+export AFL_FORKSRV_INIT_TMOUT=30000
 export ASAN_OPTIONS="abort_on_error=1:detect_leaks=0:malloc_context_size=0:symbolize=0:allocator_may_return_null=1:use_sigaltstack=0"
 
 # Derive TARGET_NAME from $TARGET path
@@ -77,5 +78,5 @@ if [ ! -d "$corpus_dir" ] || [ -z "$(ls -A "$corpus_dir" 2>/dev/null)" ]; then
     echo "WARNING: Corpus dir empty or missing: $corpus_dir"
 fi
 
-"$FUZZER/repo/afl-fuzz" -m none -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
+"$FUZZER/repo/afl-fuzz" -m none -t 5000+ -i "$TARGET/corpus/$PROGRAM" -o "$SHARED/findings" \
     "${flag_cmplog[@]}" $FUZZARGS -- "$OUT/afl/$PROGRAM" $ARGS 2>&1

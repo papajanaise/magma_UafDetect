@@ -18,7 +18,6 @@ if [ ! -d "$TARGET_DIR" ]; then
 fi
 
 for bc_file in "$TARGET_DIR"/*.bc; do
-    #bc_file="$TARGET_DIR/$PROGRAM.bc"
     [ -f "$bc_file" ] || continue
     [[ "$(basename "$bc_file")" == *_instr* ]] && continue
     name="$(basename "${bc_file%.bc}")"

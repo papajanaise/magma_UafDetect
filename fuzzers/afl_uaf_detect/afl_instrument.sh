@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-mkdir -p "$SHARED/log"
-exec > >(tee -a "$SHARED/log/afl_uaf_detect_libpng_build.log") 2>&1
+mkdir -p "$OUT/log"
+exec > >(tee -a "$OUT/log/afl_uaf_detect_libpng_build.log") 2>&1
 
 ##
 ## PHASE 1: Build target with gclang to get normal binaries + embedded bitcode
@@ -25,6 +25,7 @@ export RANLIB="${LLVM_PATH}/llvm-ranlib"
 export AR="${LLVM_PATH}/llvm-ar"
 export LD="${LLVM_PATH}/ld.lld"
 export NM="${LLVM_PATH}/llvm-nm"
+export AFL_USE_ASAN=1
 unset AFL_LLVM_CMPLOG
 
 mkdir -p "$OUT/afl"
@@ -38,11 +39,12 @@ for bc_file in "$OUT/targets/"*_instr.bc; do
         continue
     fi
 
-    # strip weak stub main() and any local getenv definition from the bitcode
+    # Strip weak stub main() and any local getenv definition from the bitcode.
+    # We strip debug info first so that sed doesn't break DISubprogram
+    # metadata entries that reference the deleted functions.
     nomain_bc="${bc_file%.bc}_nomain.bc"
-    ${LLVM_PATH}/llvm-dis "$bc_file" -o /tmp/_strip_main.ll
-    # Delete stub main and local getenv definition, then add getenv as
-    # an external declaration so call sites resolve to libc's getenv.
+    ${LLVM_PATH}/opt -strip-debug "$bc_file" -o /tmp/_stripped_debug.bc
+    ${LLVM_PATH}/llvm-dis /tmp/_stripped_debug.bc -o /tmp/_strip_main.ll
     sed -e '/^define.*@main(/,/^}/d' \
         -e '/^define.*@getenv(/,/^}/c declare ptr @getenv(ptr)' \
         /tmp/_strip_main.ll > /tmp/_strip_main_clean.ll
@@ -89,7 +91,8 @@ for bc_file in "$OUT/targets/"*_instr.bc; do
     # Reuse the _nomain.bc from Phase 3 if it exists
     nomain_bc="${bc_file%.bc}_nomain.bc"
     if [ ! -f "$nomain_bc" ]; then
-        ${LLVM_PATH}/llvm-dis "$bc_file" -o /tmp/_strip_main.ll
+        ${LLVM_PATH}/opt -strip-debug "$bc_file" -o /tmp/_stripped_debug.bc
+        ${LLVM_PATH}/llvm-dis /tmp/_stripped_debug.bc -o /tmp/_strip_main.ll
         sed -e '/^define.*@main(/,/^}/d' \
             -e '/^define.*@getenv(/,/^}/c declare ptr @getenv(ptr)' \
             /tmp/_strip_main.ll > /tmp/_strip_main_clean.ll

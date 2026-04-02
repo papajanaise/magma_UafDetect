@@ -29,7 +29,7 @@ TARGET_DIR="$OUT/targets"
 mkdir -p "$TARGET_DIR"
 
 # build libpng_read_fuzzer.
-$CXX $CXXFLAGS -std=c++11 -I. \
+$CXX $CXXFLAGS -std=c++11 -include stdlib.h -I. \
      contrib/oss-fuzz/libpng_read_fuzzer.cc \
      -o "$TARGET_DIR/libpng_read_fuzzer" \
      $LDFLAGS .libs/libpng16.a $LIBS -lz
