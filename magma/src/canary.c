@@ -17,6 +17,34 @@ extern "C" {
 static pstored_data_t data_ptr = NULL;
 static int magma_faulty = 0;
 
+static struct sigaction prev_sigsegv, prev_sigabrt, prev_sigbus;
+
+static void magma_crash_handler(int sig, siginfo_t *info, void *ctx)
+{
+    if (data_ptr) {
+#ifdef MAGMA_HARDEN_CANARIES
+        mprotect(data_ptr, FILESIZE, PROT_READ | PROT_WRITE);
+#endif
+        memcpy(data_ptr->consumer_buffer, data_ptr->producer_buffer, sizeof(data_t));
+        __sync_synchronize();
+        data_ptr->consumed = false;
+    }
+
+    /* Chain to the previous handler (e.g. ASAN) instead of SIG_DFL */
+    struct sigaction *prev = (sig == SIGSEGV) ? &prev_sigsegv :
+                             (sig == SIGABRT) ? &prev_sigabrt : &prev_sigbus;
+    if (prev->sa_flags & SA_SIGINFO) {
+        if (prev->sa_sigaction) prev->sa_sigaction(sig, info, ctx);
+    } else {
+        if (prev->sa_handler == SIG_DFL) {
+            signal(sig, SIG_DFL);
+            raise(sig);
+        } else if (prev->sa_handler != SIG_IGN) {
+            prev->sa_handler(sig);
+        }
+    }
+}
+
 static void magma_protect(int write)
 {
     if (write == 0) {
@@ -47,6 +75,14 @@ static bool magma_init(void)
     } else {
         data_ptr = mmap(0, FILESIZE, PROT_WRITE, MAP_SHARED, fd, 0);
         close(fd);
+
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(sa));
+        sa.sa_sigaction = magma_crash_handler;
+        sa.sa_flags = SA_SIGINFO;
+        sigaction(SIGSEGV, &sa, &prev_sigsegv);
+        sigaction(SIGABRT, &sa, &prev_sigabrt);
+        sigaction(SIGBUS,  &sa, &prev_sigbus);
 
 #ifdef MAGMA_HARDEN_CANARIES
         magma_protect(0);
