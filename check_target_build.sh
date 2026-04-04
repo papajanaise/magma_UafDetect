@@ -28,8 +28,8 @@ done < <(ls "$LAST_DIR"/*.out 2>/dev/null)
 # Also check for pending/queued jobs that have no log file yet
 PIPELINE_FILE="/home/users/m/m.thielebein/magma_UafDetect/.pipeline_jobs"
 if [ -f "$PIPELINE_FILE" ]; then
-    while read -r jobid _ jobname; do
-        key="build_$(echo "$jobname" | tr '/' '_')"
+    while read -r jobid jobtype jobname; do
+        key="${jobtype}_$(echo "$jobname" | tr '/' '_')"
         if [ -z "${RESULTS[$key]}" ]; then
             state=$(sacct -j "$jobid" --format=State --noheader --parsable2 2>/dev/null | head -1 | tr -d ' ')
             RESULTS["$key"]="$jobid ${state:-UNKNOWN}"
@@ -37,13 +37,30 @@ if [ -f "$PIPELINE_FILE" ]; then
     done < "$PIPELINE_FILE"
 fi
 
-# Print grouped by status
+# Print grouped by status — fuzzer builds first, then target builds
 for status in COMPLETED RUNNING PENDING FAILED; do
-    entries=()
+    fuzzer_entries=()
+    target_entries=()
     for name in $(echo "${!RESULTS[@]}" | tr ' ' '\n' | sort); do
         read -r jobid state <<< "${RESULTS[$name]}"
         if [ "$state" = "$status" ]; then
-            # Pretty-print: strip "build_" prefix, show as fuzzer/target
+            # Fuzzer build jobs: build_fuzzer_<name>
+            if [[ "$name" == build_fuzzer_* ]]; then
+                fuzzer_name="${name#build_fuzzer_}"
+                artifact_info=""
+                if [ "$status" = "COMPLETED" ]; then
+                    afl_cc="/home/users/m/m.thielebein/magma_UafDetect/fuzzers/$fuzzer_name/repo/afl-cc"
+                    if [ -x "$afl_cc" ]; then
+                        built=$(stat -c '%y' "$afl_cc" 2>/dev/null | cut -d. -f1)
+                        artifact_info=" — afl-cc built $built"
+                    else
+                        artifact_info=" — afl-cc missing!"
+                    fi
+                fi
+                fuzzer_entries+=("  [fuzzer] $fuzzer_name ($jobid)$artifact_info")
+                continue
+            fi
+            # Target build jobs: strip "build_" prefix, show as fuzzer/target
             stripped=$(echo "$name" | sed 's/^build_//')
             # Match known fuzzer prefixes to split correctly
             if [[ "$stripped" == afl_uaf_detect_* ]]; then
@@ -74,12 +91,14 @@ for status in COMPLETED RUNNING PENDING FAILED; do
                     artifact_info=" — no artifacts dir"
                 fi
             fi
-            entries+=("  $label ($jobid)$artifact_info")
+            target_entries+=("  $label ($jobid)$artifact_info")
         fi
     done
-    if [ ${#entries[@]} -gt 0 ]; then
-        echo "$status (${#entries[@]}):"
-        printf '%s\n' "${entries[@]}"
+    if [ ${#fuzzer_entries[@]} -gt 0 ] || [ ${#target_entries[@]} -gt 0 ]; then
+        total=$(( ${#fuzzer_entries[@]} + ${#target_entries[@]} ))
+        echo "$status ($total):"
+        printf '%s\n' "${fuzzer_entries[@]}"
+        printf '%s\n' "${target_entries[@]}"
         echo ""
     fi
 done

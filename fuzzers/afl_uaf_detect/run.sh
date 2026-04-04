@@ -18,6 +18,11 @@ export AFL_SKIP_CPUFREQ=1
 export AFL_NO_AFFINITY=1
 export AFL_MAP_SIZE=2097152
 export AFL_USE_UAF_DETECT=1
+if [ "${ANALYZER:-}" = "free_finder" ]; then
+    export AFL_USE_FREE_FINDER=1
+fi
+# AFL_UAF_SELECT_PROB defaults to 0.70 if not set (0.0=pure coverage, 1.0=pure UAF)
+export AFL_UAF_SELECT_PROB="${AFL_UAF_SELECT_PROB:-0.70}"
 export AFL_FORKSRV_INIT_TMOUT=30000
 export ASAN_OPTIONS="abort_on_error=1:detect_leaks=0:malloc_context_size=0:symbolize=0:allocator_may_return_null=1:use_sigaltstack=0"
 

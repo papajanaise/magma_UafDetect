@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --ntasks=1
 #SBATCH --mem=16G
-#SBATCH --time=24:00:00
+#SBATCH --time=25:00:00
 #SBATCH --partition=standard
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=m.thielebein@tu-berlin.de
@@ -15,6 +15,7 @@ ulimit -v unlimited
 : "${FUZZER:?Set FUZZER via --export}"
 : "${TARGET:?Set TARGET via --export}"
 : "${PROGRAM:?Set PROGRAM via --export}"
+: "${TIMEOUT:=7200}"  # default 2h if not passed
 
 # --- Paths ---
 SIF="/home/users/m/m.thielebein/magma_containers/magma_${FUZZER}_${TARGET}.sif"
@@ -56,7 +57,8 @@ export SINGULARITYENV_OUT="/magma_out"
 export SINGULARITYENV_SHARED="/magma_shared"
 export SINGULARITYENV_ARGS="$EXPECTED_ARGS"
 export SINGULARITYENV_POLL=5
-export SINGULARITYENV_TIMEOUT=7200 #2h #86400 #-> 24h          #3600  #1h
+export SINGULARITYENV_TIMEOUT="$TIMEOUT"
+export SINGULARITYENV_ANALYZER="${ANALYZER:-}"
 
 # --- Launch ---
 singularity exec \
