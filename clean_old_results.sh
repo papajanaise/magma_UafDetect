@@ -65,13 +65,26 @@ for fuzzer_dir in "$RESULTS_DIR"/*/; do
     done
 done
 
-# --- magma_workdir: <fuzzer>/<target>/<timestamp> ---
+# --- magma_workdir: <fuzzer>/<target>/<analyzer>/<timestamp> ---
+# Some targets have timestamps directly, others nest under an analyzer dir.
 echo "=== magma_workdir ==="
-for fuzzer_dir in "$WORKDIR"/*/; do
+for fuzzer_dir in "$WORKDIR"/afl_uaf_detect/ "$WORKDIR"/aflplusplus_lto_asan/; do
     [[ -d "$fuzzer_dir" ]] || continue
+    echo "--- $(basename "$fuzzer_dir") ---"
     for target_dir in "$fuzzer_dir"/*/; do
         [[ -d "$target_dir" ]] || continue
-        clean_subdirs "$target_dir" '^[0-9]{8}_[0-9]{6}$'
+        for sub_dir in "$target_dir"/*/; do
+            [[ -d "$sub_dir" ]] || continue
+            name=$(basename "$sub_dir")
+            if [[ "$name" =~ ^[0-9]{8}_[0-9]{6}$ ]]; then
+                # Timestamps directly under target — clean at target level
+                clean_subdirs "$target_dir" '^[0-9]{8}_[0-9]{6}$'
+                break
+            else
+                # Analyzer subdir — clean timestamps inside it
+                clean_subdirs "$sub_dir" '^[0-9]{8}_[0-9]{6}$'
+            fi
+        done
     done
 done
 

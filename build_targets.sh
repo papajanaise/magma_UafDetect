@@ -1,7 +1,8 @@
 #!/bin/bash
 
-export ANALYZER="free_finder"
+export ANALYZER="free_finder"    #free_finder or svf Analysis
 export TARGETS="expat libjpeg-turbo libpng libxml2 sqlite3"
+export FUZZERS="afl_uaf_detect aflplusplus_lto_asan"
 
 LOG_DIR="/home/users/m/m.thielebein/magma_campaign_logs/build_jobs/$(date '+%Y%m%d_%H%M%S')"
 mkdir -p "$LOG_DIR"
@@ -29,7 +30,7 @@ done
 # Build each fuzzer first in a separate job
 declare -A FUZZER_BUILD_JOB
 
-for fuzzer in "afl_uaf_detect" "aflplusplus_lto_asan"; do
+for fuzzer in $FUZZERS; do
     FUZZER_JOB=$(sbatch --parsable \
         --export=FUZZER_NAME="${fuzzer}" \
         --job-name="build_fuzzer_${fuzzer}" \
@@ -40,19 +41,31 @@ for fuzzer in "afl_uaf_detect" "aflplusplus_lto_asan"; do
     FUZZER_BUILD_JOB[$fuzzer]="$FUZZER_JOB"
 done
 
+# Build SVF driver in parallel with fuzzer builds
+SVF_DRIVER_JOB=$(sbatch --parsable \
+    --job-name="build_svf_driver" \
+    -o "${LOG_DIR}/build_svf_driver.%j.out" \
+    /home/users/m/m.thielebein/magma_UafDetect/sbatch_build_svf_driver.sh)
+echo "Submitted SVF driver build job $SVF_DRIVER_JOB"
+echo "$SVF_DRIVER_JOB build svf_driver" >> "$PIPELINE_FILE"
+
 # Use associative array to track the last job per target, so that
 # builds for the same target (different fuzzers) run sequentially.
 # This prevents concurrent writes to the same bind-mounted source repo.
 declare -A LAST_JOB_FOR_TARGET
 
-for fuzzer in "afl_uaf_detect" "aflplusplus_lto_asan"; do
+for fuzzer in $FUZZERS; do
     export FUZZER_NAME="$fuzzer"
     for target in $TARGETS; do
         export TARGET_NAME="$target"
 
-        # Depend on the fuzzer build job, and on the previous target build
-        # for the same target (to avoid concurrent writes to the source repo)
+        # Depend on the fuzzer build job, the SVF driver build (for afl_uaf_detect),
+        # and on the previous target build for the same target (to avoid concurrent
+        # writes to the source repo)
         DEPS="${FUZZER_BUILD_JOB[$fuzzer]}"
+        if [[ "$fuzzer" == "afl_uaf_detect" ]]; then
+            DEPS="${DEPS}:${SVF_DRIVER_JOB}"
+        fi
         if [[ -n "${LAST_JOB_FOR_TARGET[$target]:-}" ]]; then
             DEPS="${DEPS}:${LAST_JOB_FOR_TARGET[$target]}"
         fi

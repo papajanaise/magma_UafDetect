@@ -35,4 +35,6 @@ singularity exec --writable-tmpfs \
     "$SIF" \
     /magma/fuzzers/${FUZZER_NAME}/build.sh
 
+rm -rf "$FUZZER_OUT"
+
 echo "Fuzzer $FUZZER_NAME built successfully."
