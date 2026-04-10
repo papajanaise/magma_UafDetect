@@ -4,10 +4,14 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#define FILESIZE 2048
+#define FILESIZE 4096
 // The `2` in the denominator is for splitting the region between producer and
 // consumer buffers. It has nothing to do with CANARY_TYPE_COUNT.
 #define BUFFERLEN ((FILESIZE-sizeof(max_align_t))/sizeof(canary_t)/2)
+
+// Maximum length of a canary/bug name, including the terminating NUL.
+// Must be large enough for the longest bug ID used by any target patch.
+#define CANARY_NAME_MAX 32
 
 typedef enum {
     REACHED = 0,
@@ -18,7 +22,7 @@ typedef enum {
 typedef unsigned long long canary_storage_t;
 
 typedef struct {
-    char name[16];
+    char name[CANARY_NAME_MAX];
     union {
         struct {
             canary_storage_t reached;

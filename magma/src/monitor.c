@@ -130,7 +130,8 @@ void *dump_one_row_header(pcanary_t canary, void *arg)
     if (!*begin) {
         putc(',', stdout);
     }
-    fprintf(stdout, "%1$s_R,%1$s_T,%1$s_F", canary->name);
+    fprintf(stdout, "%1$.*2$s_R,%1$.*2$s_T,%1$.*2$s_F",
+            canary->name, (int)sizeof(canary->name));
     *begin = false;
     return NULL;
 }
@@ -159,8 +160,9 @@ void dump_row(const data_t *data)
 
 void *dump_one_human(pcanary_t canary, void *arg)
 {
-    printf("%s reached %llu triggered %llu free_reached %llu\n", \
-            canary->name, canary->reached, canary->triggered, canary->free_reached);
+    printf("%.*s reached %llu triggered %llu free_reached %llu\n", \
+            (int)sizeof(canary->name), canary->name, \
+            canary->reached, canary->triggered, canary->free_reached);
     return NULL;
 }
 

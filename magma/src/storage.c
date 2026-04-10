@@ -18,8 +18,13 @@ pcanary_t stor_get(data_t buffer, const char *name)
         }
     }
 
-    // Bug record does not exist, create it
-    strncpy(cur->name, name, sizeof(cur->name));
+    // Bug record does not exist, create it.
+    // Always NUL-terminate: strncpy leaves the destination unterminated if
+    // the source is at least sizeof(cur->name) bytes long, which would cause
+    // downstream %s readers to run past the name into the counter fields and
+    // print garbage suffixes.
+    strncpy(cur->name, name, sizeof(cur->name) - 1);
+    cur->name[sizeof(cur->name) - 1] = '\0';
     cur->reached = 0;
     cur->triggered = 0;
     return cur;
