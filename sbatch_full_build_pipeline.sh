@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -J bc-file-builder
 #SBATCH --ntasks=1
-#SBATCH --mem=16G
+#SBATCH --mem=64G
 #SBATCH --time=25:00:00
 #SBATCH --partition=standard
 #SBATCH --mail-type=ALL
@@ -21,7 +21,7 @@ export SINGULARITYENV_MAGMA=/magma/magma
 export SINGULARITYENV_OUT=/magma_out
 export SINGULARITYENV_SHARED=/magma_shared
 
-CAMPAIGN_DIR="/home/users/m/m.thielebein/magma_workdir/${FUZZER_NAME}/${TARGET_NAME}/$(date '+%Y%m%d_%H%M%S')"
+CAMPAIGN_DIR="/home/users/m/m.thielebein/magma_workdir/${FUZZER_NAME}/${TARGET_NAME}/${ANALYZER}"
 mkdir -p "$CAMPAIGN_DIR"
 echo "Campaign directory: $CAMPAIGN_DIR"
 

@@ -13,8 +13,10 @@ echo "========================================================================"
 echo ""
 
 # Two-file awk: MONITOR_CSV (file 1) then CRASH_CSV (file 2)
-# Monitor CSV: fuzzer,target,program,run,bug,reached_s,triggered_s,free_reached_s
-# Crash CSV:   fuzzer,target,program,run_id,crash_id,signal,time_ms,replay_exit_code,bugs_reached,bugs_triggered,bugs_free_reached
+# Monitor CSV: fuzzer,analyzer,target,program,run,bug,reached_s,triggered_s,free_reached_s
+# Crash CSV:   fuzzer,analyzer,target,program,run_id,crash_id,signal,time_ms,replay_exit_code,bugs_reached,bugs_triggered,bugs_free_reached
+# (fuzzer, analyzer) pairs are merged into a single label "fuzzer[_analyzer]"
+# so each analyzer variant gets its own column block in the comparison.
 awk -F',' '
 
 function isort(arr, n,    i, j, tmp) {
@@ -29,17 +31,22 @@ function isort(arr, n,    i, j, tmp) {
     }
 }
 
+function fuzzer_label(f, a) {
+    return (a == "" ? f : f "_" a)
+}
+
 # File 1: Monitor CSV — reached/triggered/free_reached (seconds)
 # Take minimum time across programs for each bug+fuzzer
 FILENAME == ARGV[1] && FNR > 1 {
-    fuzzer = $1; target = $2; bug = $5
-    reached_s = $6; triggered_s = $7; free_s = $8
+    fuzzer = $1; analyzer = $2; target = $3; bug = $6
+    reached_s = $7; triggered_s = $8; free_s = $9
 
     if (bug == "(no data)") next
 
+    flabel = fuzzer_label(fuzzer, analyzer)
     all_bugs[bug] = target
-    all_fuzzers[fuzzer] = 1
-    key = bug SUBSEP fuzzer
+    all_fuzzers[flabel] = 1
+    key = bug SUBSEP flabel
 
     if (reached_s != "-" && reached_s + 0 > 0) {
         if (!(key in mon_reached) || reached_s + 0 < mon_reached[key] + 0)
@@ -58,18 +65,19 @@ FILENAME == ARGV[1] && FNR > 1 {
 
 # File 2: Crash CSV — first crash time and crash count per bug+fuzzer
 FILENAME == ARGV[2] && FNR > 1 {
-    fuzzer = $1; target = $2; time_ms = $7 + 0
+    fuzzer = $1; analyzer = $2; target = $3; time_ms = $8 + 0
+    flabel = fuzzer_label(fuzzer, analyzer)
 
     # Collect all bug IDs mentioned in this crash (from replay columns)
     delete row_bugs
-    if ($9 != "none")  { split($9,  _b, ";"); for (i in _b) { gsub(/\([0-9]+\)/, "", _b[i]); row_bugs[_b[i]] = 1 } }
     if ($10 != "none") { split($10, _b, ";"); for (i in _b) { gsub(/\([0-9]+\)/, "", _b[i]); row_bugs[_b[i]] = 1 } }
     if ($11 != "none") { split($11, _b, ";"); for (i in _b) { gsub(/\([0-9]+\)/, "", _b[i]); row_bugs[_b[i]] = 1 } }
+    if ($12 != "none") { split($12, _b, ";"); for (i in _b) { gsub(/\([0-9]+\)/, "", _b[i]); row_bugs[_b[i]] = 1 } }
 
     for (bug in row_bugs) {
         all_bugs[bug] = target
-        all_fuzzers[fuzzer] = 1
-        key = bug SUBSEP fuzzer
+        all_fuzzers[flabel] = 1
+        key = bug SUBSEP flabel
 
         # First crash time (ms)
         if (!(key in first_crash) || time_ms < first_crash[key])

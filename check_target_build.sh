@@ -1,104 +1,112 @@
 #!/bin/bash
 
-# Find the most recent build log directory
-LOG_BASE="/home/users/m/m.thielebein/magma_campaign_logs/build_jobs"
-LAST_DIR=$(ls -1d "$LOG_BASE"/*/ 2>/dev/null | sort | tail -1)
+# Report build status by querying Slurm directly (no log-dir parsing).
+# For every fuzzer+target+analyzer combination that is NOT currently being
+# built, print the timestamp of the newest built executable.
 
-if [ -z "$LAST_DIR" ]; then
-    echo "No build logs found in $LOG_BASE"
-    exit 1
-fi
+FUZZERS="${FUZZERS:-aflplusplus_lto_asan afl_uaf_detect}"
+TARGETS="${TARGETS:-expat libjpeg-turbo libpng libxml2 sqlite3}"
+# Default to showing both analyzer variants; override with ANALYZER env.
+ANALYZERS="${ANALYZER:-svf free_finder}"
 
-echo "Build run: $(basename "$LAST_DIR")"
+MAGMA_OUT="/home/users/m/m.thielebein/magma_out"
+FUZZER_REPO_BASE="/home/users/m/m.thielebein/magma_UafDetect/fuzzers"
+SVF_DRIVER_DIR="/home/users/m/m.thielebein/magma_UafDetect/fuzzers/afl_uaf_detect/repo/SVF_drivers/build"
+
+# Snapshot of the current user's pending/running jobs: "jobid|state|jobname".
+ACTIVE_JOBS=$(squeue --me -h -o '%i|%T|%j' 2>/dev/null)
+
+# If a job whose name matches $1 exactly is active, print "JOBID STATE".
+job_by_name() {
+    local name="$1"
+    awk -F'|' -v n="$name" '$3 == n {print $1, $2; exit}' <<< "$ACTIVE_JOBS"
+}
+
+# Print "built <human date>" for the newest executable in $1, or a marker.
+probe_artifact_dir() {
+    local dir="$1"
+    if [ ! -d "$dir" ]; then
+        echo "no artifacts dir ($dir)"
+        return
+    fi
+    local newest
+    newest=$(find "$dir" -maxdepth 1 -type f -executable -printf '%T@ %Tc\n' 2>/dev/null \
+             | sort -rn | head -1 | cut -d' ' -f2-)
+    if [ -n "$newest" ]; then
+        echo "built $newest"
+    else
+        echo "no executables found"
+    fi
+}
+
+# Print "built <human date>" for a single executable file.
+probe_file() {
+    local f="$1"
+    if [ -x "$f" ]; then
+        echo "built $(stat -c '%y' "$f" 2>/dev/null | cut -d. -f1)"
+    else
+        echo "missing ($f)"
+    fi
+}
+
+# Artifact directory for a given (fuzzer, target, analyzer).
+artifact_dir_for() {
+    local fuzzer="$1" target="$2" analyzer="$3"
+    case "$fuzzer" in
+        aflplusplus_lto_asan)
+            echo "$MAGMA_OUT/aflplusplus_lto_asan/$target/afl/targets" ;;
+        afl_uaf_detect)
+            case "$analyzer" in
+                free_finder) echo "$MAGMA_OUT/afl_uaf_detect/$target/free_finder/afl" ;;
+                svf)         echo "$MAGMA_OUT/afl_uaf_detect/$target/svf/targets" ;;
+            esac
+            ;;
+    esac
+}
+
+echo "== Fuzzers =="
+for fuzzer in $FUZZERS; do
+    active=$(job_by_name "build_fuzzer_${fuzzer}")
+    if [ -n "$active" ]; then
+        read -r jid state <<< "$active"
+        echo "  [building: $state] $fuzzer ($jid)"
+    else
+        echo "  $fuzzer — $(probe_file "$FUZZER_REPO_BASE/$fuzzer/repo/afl-cc")"
+    fi
+done
 echo ""
 
-# Extract job IDs from log filenames and query sacct
-declare -A RESULTS
-while IFS= read -r file; do
-    base=$(basename "$file")
-    # Extract job name and ID from filename: build_<fuzzer>_<target>.<jobid>.out
-    jobid=$(echo "$base" | grep -oP '\.\K\d+(?=\.out)')
-    name=$(echo "$base" | sed "s/\.$jobid\.out//")
-    if [ -n "$jobid" ]; then
-        state=$(sacct -j "$jobid" --format=State --noheader --parsable2 2>/dev/null | head -1 | tr -d ' ')
-        RESULTS["$name"]="$jobid $state"
-    fi
-done < <(ls "$LAST_DIR"/*.out 2>/dev/null)
-
-# Also check for pending/queued jobs that have no log file yet
-PIPELINE_FILE="/home/users/m/m.thielebein/magma_UafDetect/.pipeline_jobs"
-if [ -f "$PIPELINE_FILE" ]; then
-    while read -r jobid jobtype jobname; do
-        key="${jobtype}_$(echo "$jobname" | tr '/' '_')"
-        if [ -z "${RESULTS[$key]}" ]; then
-            state=$(sacct -j "$jobid" --format=State --noheader --parsable2 2>/dev/null | head -1 | tr -d ' ')
-            RESULTS["$key"]="$jobid ${state:-UNKNOWN}"
-        fi
-    done < "$PIPELINE_FILE"
+echo "== Analyzer (SVF driver) =="
+active=$(job_by_name "build_svf_driver")
+if [ -n "$active" ]; then
+    read -r jid state <<< "$active"
+    echo "  [building: $state] svf_driver ($jid)"
+else
+    echo "  svf-driver         — $(probe_file "$SVF_DRIVER_DIR/svf-driver")"
+    echo "  free_finder-driver — $(probe_file "$SVF_DRIVER_DIR/free_finder-driver")"
 fi
+echo ""
 
-# Print grouped by status — fuzzer builds first, then target builds
-for status in COMPLETED RUNNING PENDING FAILED; do
-    fuzzer_entries=()
-    target_entries=()
-    for name in $(echo "${!RESULTS[@]}" | tr ' ' '\n' | sort); do
-        read -r jobid state <<< "${RESULTS[$name]}"
-        if [ "$state" = "$status" ]; then
-            # Fuzzer build jobs: build_fuzzer_<name>
-            if [[ "$name" == build_fuzzer_* ]]; then
-                fuzzer_name="${name#build_fuzzer_}"
-                artifact_info=""
-                if [ "$status" = "COMPLETED" ]; then
-                    afl_cc="/home/users/m/m.thielebein/magma_UafDetect/fuzzers/$fuzzer_name/repo/afl-cc"
-                    if [ -x "$afl_cc" ]; then
-                        built=$(stat -c '%y' "$afl_cc" 2>/dev/null | cut -d. -f1)
-                        artifact_info=" — afl-cc built $built"
-                    else
-                        artifact_info=" — afl-cc missing!"
-                    fi
-                fi
-                fuzzer_entries+=("  [fuzzer] $fuzzer_name ($jobid)$artifact_info")
-                continue
-            fi
-            # Target build jobs: strip "build_" prefix, show as fuzzer/target
-            stripped=$(echo "$name" | sed 's/^build_//')
-            # Match known fuzzer prefixes to split correctly
-            if [[ "$stripped" == afl_uaf_detect_* ]]; then
-                label="afl_uaf_detect/$(echo "$stripped" | sed 's/^afl_uaf_detect_//')"
-            elif [[ "$stripped" == aflplusplus_lto_asan_* ]]; then
-                label="aflplusplus_lto_asan/$(echo "$stripped" | sed 's/^aflplusplus_lto_asan_//')"
-            else
-                label="$stripped"
-            fi
-            # For completed jobs, show timestamp of built artifacts
-            artifact_info=""
-            if [ "$status" = "COMPLETED" ]; then
-                fuzzer=$(echo "$label" | cut -d/ -f1)
-                target=$(echo "$label" | cut -d/ -f2)
-                if [ "$fuzzer" = "afl_uaf_detect" ]; then
-                    artifact_dir="/home/users/m/m.thielebein/magma_out/afl_uaf_detect/$target/free_finder/afl"
-                elif [ "$fuzzer" = "aflplusplus_lto_asan" ]; then
-                    artifact_dir="/home/users/m/m.thielebein/magma_out/aflplusplus_lto_asan/$target/afl/targets"
-                fi
-                if [ -d "$artifact_dir" ]; then
-                    newest=$(find "$artifact_dir" -maxdepth 1 -type f -executable -printf '%T@ %Tc\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
-                    if [ -n "$newest" ]; then
-                        artifact_info=" — built $newest"
-                    else
-                        artifact_info=" — no executables found"
-                    fi
-                else
-                    artifact_info=" — no artifacts dir"
-                fi
-            fi
-            target_entries+=("  $label ($jobid)$artifact_info")
-        fi
-    done
-    if [ ${#fuzzer_entries[@]} -gt 0 ] || [ ${#target_entries[@]} -gt 0 ]; then
-        total=$(( ${#fuzzer_entries[@]} + ${#target_entries[@]} ))
-        echo "$status ($total):"
-        printf '%s\n' "${fuzzer_entries[@]}"
-        printf '%s\n' "${target_entries[@]}"
-        echo ""
+echo "== Target builds =="
+for fuzzer in $FUZZERS; do
+    if [[ "$fuzzer" == "afl_uaf_detect" ]]; then
+        analyzers_iter=($ANALYZERS)
+    else
+        analyzers_iter=("")
     fi
+    for target in $TARGETS; do
+        for analyzer in "${analyzers_iter[@]}"; do
+            suffix="${analyzer:+_${analyzer}}"
+            job_name="build_${fuzzer}_${target}${suffix}"
+            label="${fuzzer}/${target}${analyzer:+ [$analyzer]}"
+            active=$(job_by_name "$job_name")
+            if [ -n "$active" ]; then
+                read -r jid state <<< "$active"
+                echo "  [building: $state] $label ($jid)"
+            else
+                dir=$(artifact_dir_for "$fuzzer" "$target" "$analyzer")
+                echo "  $label — $(probe_artifact_dir "$dir")"
+            fi
+        done
+    done
 done

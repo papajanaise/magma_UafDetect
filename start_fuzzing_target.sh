@@ -8,12 +8,13 @@
 #   ./start_fuzzing_target.sh --timeout 86400           # override campaign timeout (seconds)
 #
 
-ALL_FUZZERS=("afl_uaf_detect" "aflplusplus_lto_asan")
-ALL_TARGETS=("expat" "libjpeg-turbo" "libpng" "libxml2" "sqlite3")
+ALL_FUZZERS=("afl_uaf_detect")
+ALL_TARGETS=("expat" "libjpeg-turbo" "libpng" "libxml2")
+ALL_ANALYZERS=("free_finder")
 
 FUZZERS=()
 TARGETS=()
-TIMEOUT=7200  # default: 2 hours (in seconds)
+TIMEOUT=86400  # default: 24 hours (in seconds)
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -45,14 +46,18 @@ for fuzzer in "${FUZZERS[@]}"; do
 
         for PROGRAM in "${PROGRAMS[@]}"; do
             if [ "$FUZZER" == "afl_uaf_detect" ]; then
-                export ANALYZER="free_finder"
+                ANALYZERS=("${ALL_ANALYZERS[@]}")
             else
-                export ANALYZER=""
+                ANALYZERS=("")
             fi
-            sbatch --export=FUZZER="${FUZZER}",TARGET="${TARGET}",PROGRAM="${PROGRAM}",ANALYZER="${ANALYZER}",TIMEOUT="${TIMEOUT}" \
-                --job-name="${FUZZER}_${TARGET}_${PROGRAM}" \
-                -o "${LOG_DIR}/magma_campaign_${FUZZER}_${TARGET}_${PROGRAM}.%j.out" \
-                /home/users/m/m.thielebein/magma_UafDetect/sbatch_fuzzing_campaign.sh
+            for ANALYZER in "${ANALYZERS[@]}"; do
+                export ANALYZER
+                JOB_SUFFIX="${ANALYZER:+_${ANALYZER}}"
+                sbatch --export=FUZZER="${FUZZER}",TARGET="${TARGET}",PROGRAM="${PROGRAM}",ANALYZER="${ANALYZER}",TIMEOUT="${TIMEOUT}" \
+                    --job-name="${FUZZER}_${TARGET}_${PROGRAM}${JOB_SUFFIX}" \
+                    -o "${LOG_DIR}/magma_campaign_${FUZZER}_${TARGET}_${PROGRAM}${JOB_SUFFIX}.%j.out" \
+                    /home/users/m/m.thielebein/magma_UafDetect/sbatch_fuzzing_campaign.sh
+            done
         done
     done
 done

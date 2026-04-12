@@ -4,13 +4,14 @@
 # Compares elapsed time against expected timeout to detect early failures.
 #
 # Usage:
-#   ./check_fuzzing_jobs.sh                  # uses default timeout of 7200s (2h)
-#   ./check_fuzzing_jobs.sh --timeout 86400  # check against 24h timeout
+#   ./check_fuzzing_jobs.sh                  # uses default timeout of 86400s (24h)
+#   ./check_fuzzing_jobs.sh --timeout 7200   # check against 2h timeout
 #
 
 FUZZERS=("afl_uaf_detect" "aflplusplus_lto_asan")
 TARGETS=("expat" "libjpeg-turbo" "libpng" "libxml2" "sqlite3")
-TIMEOUT=7200  # default: 2 hours (must match what was passed to start_fuzzing_target.sh)
+ANALYZERS=("free_finder" "svf")  # analyzers appended as suffix for afl_uaf_detect jobs
+TIMEOUT=86400  # default: 24 hours (must match what was passed to start_fuzzing_target.sh)
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -37,7 +38,13 @@ for f in "${FUZZERS[@]}"; do
     for t in "${TARGETS[@]}"; do
         source /home/users/m/m.thielebein/magma_UafDetect/targets/"$t"/configrc
         for p in "${PROGRAMS[@]}"; do
-            EXPECTED+=("${f}_${t}_${p}")
+            if [[ "$f" == "afl_uaf_detect" ]]; then
+                for a in "${ANALYZERS[@]}"; do
+                    EXPECTED+=("${f}_${t}_${p}_${a}")
+                done
+            else
+                EXPECTED+=("${f}_${t}_${p}")
+            fi
         done
     done
 done

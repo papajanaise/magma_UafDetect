@@ -37,10 +37,15 @@ export MAKEFLAGS="-j${MAGMA_JOBS:-1}"
 # main() is normally supplied by -fsanitize=fuzzer, which we don't use with gclang.
 # Use a weak stub so the fuzz binaries link for get-bc extraction, but AFL's strong main
 # from libAFLDriver.a will override it at the instrument.sh relinking step (Phase 3).
-cat > /tmp/stub_main.c << 'EOF'
+# Write the stub source under $OUT (per-target, per-campaign) rather than /tmp.
+# Singularity bind-mounts the host /tmp into every container, so parallel target
+# builds racing on /tmp/stub_main.c can read a half-written (empty) file and
+# produce a stub_main.o with no `main` symbol — causing later fuzzer links to
+# fail with "undefined reference to `main'".
+cat > "$OUT/stub_main.c" << 'EOF'
 __attribute__((weak)) int main(int argc, char **argv) { return 0; }
 EOF
-"$CC" $CFLAGS -c /tmp/stub_main.c -o "$OUT/stub_main.o"
+"$CC" $CFLAGS -c "$OUT/stub_main.c" -o "$OUT/stub_main.o"
 export LIBS="$LIBS -l:stub_main.o"
 
 "$TARGET/build.sh"

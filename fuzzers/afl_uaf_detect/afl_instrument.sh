@@ -43,12 +43,15 @@ for bc_file in "$OUT/targets/"*_instr.bc; do
     # We strip debug info first so that sed doesn't break DISubprogram
     # metadata entries that reference the deleted functions.
     nomain_bc="${bc_file%.bc}_nomain.bc"
-    ${LLVM_PATH}/opt -strip-debug "$bc_file" -o /tmp/_stripped_debug.bc
-    ${LLVM_PATH}/llvm-dis /tmp/_stripped_debug.bc -o /tmp/_strip_main.ll
+    tmpd=$(mktemp -d)
+    trap 'rm -rf "$tmpd"' RETURN 2>/dev/null || true
+    ${LLVM_PATH}/opt -strip-debug "$bc_file" -o "$tmpd/stripped_debug.bc"
+    ${LLVM_PATH}/llvm-dis "$tmpd/stripped_debug.bc" -o "$tmpd/strip_main.ll"
     sed -e '/^define.*@main(/,/^}/d' \
         -e '/^define.*@getenv(/,/^}/c declare ptr @getenv(ptr)' \
-        /tmp/_strip_main.ll > /tmp/_strip_main_clean.ll
-    ${LLVM_PATH}/llvm-as /tmp/_strip_main_clean.ll -o "$nomain_bc"
+        "$tmpd/strip_main.ll" > "$tmpd/strip_main_clean.ll"
+    ${LLVM_PATH}/llvm-as "$tmpd/strip_main_clean.ll" -o "$nomain_bc"
+    rm -rf "$tmpd"
     echo "[*] Stripped stub main + getenv from $(basename "$bc_file")"
 
     # afl-clang-lto accepts .bc input — it will:
@@ -91,12 +94,14 @@ for bc_file in "$OUT/targets/"*_instr.bc; do
     # Reuse the _nomain.bc from Phase 3 if it exists
     nomain_bc="${bc_file%.bc}_nomain.bc"
     if [ ! -f "$nomain_bc" ]; then
-        ${LLVM_PATH}/opt -strip-debug "$bc_file" -o /tmp/_stripped_debug.bc
-        ${LLVM_PATH}/llvm-dis /tmp/_stripped_debug.bc -o /tmp/_strip_main.ll
+        tmpd=$(mktemp -d)
+        ${LLVM_PATH}/opt -strip-debug "$bc_file" -o "$tmpd/stripped_debug.bc"
+        ${LLVM_PATH}/llvm-dis "$tmpd/stripped_debug.bc" -o "$tmpd/strip_main.ll"
         sed -e '/^define.*@main(/,/^}/d' \
             -e '/^define.*@getenv(/,/^}/c declare ptr @getenv(ptr)' \
-            /tmp/_strip_main.ll > /tmp/_strip_main_clean.ll
-        ${LLVM_PATH}/llvm-as /tmp/_strip_main_clean.ll -o "$nomain_bc"
+            "$tmpd/strip_main.ll" > "$tmpd/strip_main_clean.ll"
+        ${LLVM_PATH}/llvm-as "$tmpd/strip_main_clean.ll" -o "$nomain_bc"
+        rm -rf "$tmpd"
     fi
 
     EXTRA_LIBS=""
