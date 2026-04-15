@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export ANALYZER="free_finder"    #free_finder or svf Analysis
-export TARGETS="sqlite3"
+export TARGETS="expat libjpeg-turbo libpng libxml2 sqlite3" #targets to build
 export FUZZERS="afl_uaf_detect" #aflplusplus first because the fuzzer is usally done building first and targets can already be built
 
 LOG_DIR="/home/users/m/m.thielebein/magma_campaign_logs/build_jobs/$(date '+%Y%m%d_%H%M%S')"
@@ -203,20 +203,28 @@ for fuzzer in $FUZZERS; do
             # variants patch/build under /magma/targets/$target). Also chain onto any
             # already-in-flight jobs we detected for this fuzzer/analyzer/target so
             # we don't race builds that were running before this script started.
-            DEPS=""
-            _add_dep() {
-                local d="$1"
-                [[ -z "$d" ]] && return
-                DEPS="${DEPS:+${DEPS}:}${d}"
+            # afterok: artifact producers we consume (fuzzer binary, svf driver).
+            # afterany: serialization-only deps (prior target build sharing the
+            # same source tree) — we need them *finished*, not successful, so
+            # a failed sibling variant doesn't cascade-cancel the next one.
+            DEPS_OK=""
+            DEPS_ANY=""
+            _add_ok() {
+                local d="$1"; [[ -z "$d" ]] && return
+                DEPS_OK="${DEPS_OK:+${DEPS_OK}:}${d}"
             }
-            _add_dep "${FUZZER_BUILD_JOB[$fuzzer]:-}"
-            _add_dep "${FUZZER_EXTRA_DEPS[$fuzzer]:-}"
+            _add_any() {
+                local d="$1"; [[ -z "$d" ]] && return
+                DEPS_ANY="${DEPS_ANY:+${DEPS_ANY}:}${d}"
+            }
+            _add_ok "${FUZZER_BUILD_JOB[$fuzzer]:-}"
+            _add_ok "${FUZZER_EXTRA_DEPS[$fuzzer]:-}"
             if [[ "$fuzzer" == "afl_uaf_detect" ]]; then
-                _add_dep "${SVF_DRIVER_JOB:-}"
-                _add_dep "${ANALYZER_EXTRA_DEPS[$analyzer]:-}"
+                _add_ok "${SVF_DRIVER_JOB:-}"
+                _add_ok "${ANALYZER_EXTRA_DEPS[$analyzer]:-}"
             fi
-            _add_dep "${LAST_JOB_FOR_TARGET[$target]:-}"
-            _add_dep "${TARGET_EXTRA_DEPS[$target]:-}"
+            _add_any "${LAST_JOB_FOR_TARGET[$target]:-}"
+            _add_any "${TARGET_EXTRA_DEPS[$target]:-}"
 
             # Per-variant job name / log file. For fuzzers without analyzer
             # variants we omit the suffix so existing tooling keeps working.
@@ -224,9 +232,14 @@ for fuzzer in $FUZZERS; do
             JOB_NAME="build_${FUZZER_NAME}_${TARGET_NAME}${job_suffix}"
 
             # Submit the build job and capture its ID
+            dep_parts=()
+            dep_spec=""
+            [[ -n "$DEPS_OK"  ]] && dep_parts+=("afterok:${DEPS_OK}")
+            [[ -n "$DEPS_ANY" ]] && dep_parts+=("afterany:${DEPS_ANY}")
             dep_args=()
-            if [[ -n "$DEPS" ]]; then
-                dep_args+=(--dependency=afterok:"${DEPS}")
+            if [ ${#dep_parts[@]} -gt 0 ]; then
+                dep_spec=$(IFS=,; echo "${dep_parts[*]}")
+                dep_args+=(--dependency="$dep_spec")
             fi
             BUILD_JOB=$(sbatch --parsable \
                 "${dep_args[@]}" \
@@ -234,7 +247,7 @@ for fuzzer in $FUZZERS; do
                 --job-name="${JOB_NAME}" \
                 -o "${LOG_DIR}/${JOB_NAME}.%j.out" \
                 /home/users/m/m.thielebein/magma_UafDetect/sbatch_full_build_pipeline.sh)
-            echo "Submitted build job $BUILD_JOB for ${FUZZER_NAME}/${TARGET_NAME}${analyzer:+/${analyzer}} (deps: ${DEPS:-none})"
+            echo "Submitted build job $BUILD_JOB for ${FUZZER_NAME}/${TARGET_NAME}${analyzer:+/${analyzer}} (deps: ${dep_spec:-none})"
             echo "$BUILD_JOB build ${FUZZER_NAME}/${TARGET_NAME}${analyzer:+/${analyzer}}" >> "$PIPELINE_FILE"
 
             LAST_JOB_FOR_TARGET[$target]="$BUILD_JOB"

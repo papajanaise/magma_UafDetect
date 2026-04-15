@@ -37,4 +37,8 @@ singularity exec --writable-tmpfs \
 
 rm -rf "$FUZZER_OUT"
 
+STAMP_DIR="/home/users/m/m.thielebein/magma_UafDetect/.build_stamps"
+mkdir -p "$STAMP_DIR"
+touch "$STAMP_DIR/fuzzer_${FUZZER_NAME}.stamp"
+
 echo "Fuzzer $FUZZER_NAME built successfully."

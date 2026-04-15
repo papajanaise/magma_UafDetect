@@ -50,7 +50,9 @@ for f in "${FUZZERS[@]}"; do
 done
 
 # Collect most recent sacct entry per job name (last line wins)
+# Also track all currently running/pending instances per name for duplicate detection
 declare -A JOB_STATE JOB_ELAPSED JOB_END JOB_ID
+declare -A RUNNING_JOBS  # name -> newline-separated "jobid|elapsed" entries
 while IFS='|' read -r jobid name state elapsed end; do
     # Trim whitespace
     jobid="${jobid#"${jobid%%[![:space:]]*}"}"
@@ -67,6 +69,15 @@ while IFS='|' read -r jobid name state elapsed end; do
     JOB_STATE["$name"]="$state"
     JOB_ELAPSED["$name"]="$elapsed"
     JOB_END["$name"]="$end"
+
+    # Track all running/pending instances for duplicate detection
+    if [[ "$state" == "RUNNING" || "$state" == "PENDING" ]]; then
+        if [[ -n "${RUNNING_JOBS[$name]:-}" ]]; then
+            RUNNING_JOBS["$name"]+=$'\n'"${jobid}|${state}|${elapsed}"
+        else
+            RUNNING_JOBS["$name"]="${jobid}|${state}|${elapsed}"
+        fi
+    fi
 done < <(sacct -u "$USER" --format=JobID,JobName%80,State%12,Elapsed,End -n -X --parsable2 2>/dev/null)
 
 # Allow 10% tolerance for timeout comparison
@@ -83,6 +94,7 @@ running=()
 finished=()
 failed=()
 missing=()
+duplicates=()
 
 for job in "${EXPECTED[@]}"; do
     state="${JOB_STATE[$job]:-}"
@@ -92,6 +104,18 @@ for job in "${EXPECTED[@]}"; do
     if [[ -z "$state" ]]; then
         missing+=("$job")
         continue
+    fi
+
+    # Check for duplicate running/pending instances
+    if [[ -n "${RUNNING_JOBS[$job]:-}" ]]; then
+        local_count=$(echo "${RUNNING_JOBS[$job]}" | wc -l)
+        if [[ $local_count -gt 1 ]]; then
+            duplicates+=("$(printf "  %-70s  %d instances:" "$job" "$local_count")")
+            while IFS='|' read -r dup_id dup_state dup_elapsed; do
+                dup_sec=$(elapsed_to_seconds "$dup_elapsed")
+                duplicates+=("$(printf "    JobID %-12s  %-9s  elapsed %s (%s)" "$dup_id" "$dup_state" "$dup_elapsed" "$(fmt_duration $dup_sec)")")
+            done <<< "${RUNNING_JOBS[$job]}"
+        fi
     fi
 
     if [[ "$state" == "RUNNING" || "$state" == "PENDING" ]]; then
@@ -115,6 +139,12 @@ done
 total=${#EXPECTED[@]}
 echo "=== Fuzzing Campaign Status (${total} expected, timeout=$(fmt_duration $TIMEOUT)) ==="
 echo ""
+
+if [[ ${#duplicates[@]} -gt 0 ]]; then
+    echo "⚠ DUPLICATE RUNNING JOBS:"
+    printf '%s\n' "${duplicates[@]}"
+    echo ""
+fi
 
 if [[ ${#running[@]} -gt 0 ]]; then
     echo "RUNNING (${#running[@]}):"
@@ -142,4 +172,16 @@ if [[ ${#missing[@]} -gt 0 ]]; then
     echo ""
 fi
 
-echo "Summary: ${#running[@]} running, ${#finished[@]} finished, ${#failed[@]} failed, ${#missing[@]} missing"
+# Count campaigns with duplicates (lines containing "instances:")
+dup_count=0
+for line in "${duplicates[@]}"; do
+    if [[ "$line" == *"instances:"* ]]; then
+        ((dup_count++))
+    fi
+done
+
+if [[ $dup_count -gt 0 ]]; then
+    echo "Summary: ${#running[@]} running ($dup_count with duplicates), ${#finished[@]} finished, ${#failed[@]} failed, ${#missing[@]} missing"
+else
+    echo "Summary: ${#running[@]} running, ${#finished[@]} finished, ${#failed[@]} failed, ${#missing[@]} missing"
+fi

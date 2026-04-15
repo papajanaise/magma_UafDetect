@@ -32,4 +32,8 @@ singularity exec \
         cmake --build /magma/fuzzers/afl_uaf_detect/repo/SVF_drivers/build --verbose
     '
 
+STAMP_DIR="/home/users/m/m.thielebein/magma_UafDetect/.build_stamps"
+mkdir -p "$STAMP_DIR"
+touch "$STAMP_DIR/svf_driver.stamp"
+
 echo "SVF driver built successfully."

@@ -56,7 +56,7 @@ for fuzzer_src in xml_parse_fuzzer xml_parsebuffer_fuzzer; do
             "$FUZZ_DIR/${fuzzer_src}.c" \
             -o "$TARGET_DIR/${output_name}" \
             $LDFLAGS \
-            -L"$LIB_DIR" -lexpat \
+            "$LIB_DIR/libexpat.a" \
             $LIBS \
             -lm
     done
