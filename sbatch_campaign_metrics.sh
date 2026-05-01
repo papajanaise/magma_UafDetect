@@ -22,7 +22,7 @@ VENV_PY=/home/users/m/m.thielebein/magma_UafDetect/tools/.venv/bin/python
 if [[ ! -x "$VENV_PY" ]]; then
     echo "ERROR: venv python not found at $VENV_PY" >&2
     echo "Create it once with:" >&2
-    echo "  python3 -m venv $(dirname $(dirname $VENV_PY)) && $VENV_PY -m pip install numpy pandas" >&2
+    echo "  python3 -m venv $(dirname $(dirname $VENV_PY)) && $VENV_PY -m pip install pandas" >&2
     exit 1
 fi
 
