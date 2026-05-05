@@ -26,6 +26,10 @@ singularity exec \
     "$SIF" \
     bash -c '
         set -euo pipefail
+        # Wipe the build dir so a stale CMakeCache.txt from a different
+        # source path (e.g. devcontainer at /workspaces/...) cannot make
+        # cmake refuse to reconfigure.
+        rm -rf /magma/fuzzers/afl_uaf_detect/repo/SVF_drivers/build
         cmake -S /magma/fuzzers/afl_uaf_detect/repo/SVF_drivers \
               -B /magma/fuzzers/afl_uaf_detect/repo/SVF_drivers/build \
               -DSVF_DIR=/SVF

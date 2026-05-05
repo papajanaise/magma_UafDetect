@@ -1,8 +1,8 @@
 #!/bin/bash
 
-export ANALYZER="free_finder"    #free_finder or svf Analysis
+export ANALYZER="free_finder svf"    #free_finder or svf Analysis
 export TARGETS="expat libjpeg-turbo libpng libxml2 sqlite3" #targets to build
-export FUZZERS="afl_uaf_detect" #aflplusplus first because the fuzzer is usally done building first and targets can already be built
+export FUZZERS="aflplusplus_lto_asan" #aflplusplus first because the fuzzer is usally done building first and targets can already be built
 
 LOG_DIR="/home/users/m/m.thielebein/magma_campaign_logs/build_jobs/$(date '+%Y%m%d_%H%M%S')"
 mkdir -p "$LOG_DIR"
@@ -116,14 +116,25 @@ done
 
 # Clean all target repos on the host before submitting any jobs.
 # This prevents stale build artifacts from interfering with fresh builds.
+# If a repo has never been fetched (empty dir) or isn't a git checkout
+# (sqlite3 uses a tarball), invoke its fetch.sh instead of git-cleaning.
 for target in $TARGETS; do
     if [[ -n "${TARGET_EXTRA_DEPS[$target]:-}" ]]; then
         echo "Skipping clean of $target repo (active job in progress)."
         continue
     fi
-    echo "Cleaning $target repo..."
-    git -C "$TARGETS_DIR/$target/repo" clean -fdx
-    git -C "$TARGETS_DIR/$target/repo" checkout -- .
+    repo="$TARGETS_DIR/$target/repo"
+    if [[ -d "$repo/.git" ]]; then
+        echo "Cleaning $target repo..."
+        git -C "$repo" clean -fdx
+        git -C "$repo" checkout -- .
+    else
+        echo "Fetching $target source..."
+        rm -rf "$repo"
+        mkdir -p "$repo"
+        TARGET="$TARGETS_DIR/$target" OUT="$TARGETS_DIR/$target" \
+            bash "$TARGETS_DIR/$target/fetch.sh"
+    fi
 done
 if [[ -z "${TARGET_EXTRA_DEPS[sqlite3]:-}" ]]; then
     rm -rf "$TARGETS_DIR/sqlite3/work"
@@ -140,6 +151,24 @@ for target in $TARGETS; do
     fi
     echo "Applying patches to $target..."
     TARGET="$TARGETS_DIR/$target" /home/users/m/m.thielebein/magma_UafDetect/magma/apply_patches.sh
+done
+
+FUZZERS_DIR="/home/users/m/m.thielebein/magma_UafDetect/fuzzers"
+
+# Fetch fuzzer sources on the host if missing. Skip when a build of the
+# same fuzzer is already in flight, to avoid corrupting an in-use tree.
+for fuzzer in $FUZZERS; do
+    if [[ -n "${SKIP_FUZZER_BUILD[$fuzzer]:-}" ]]; then
+        continue
+    fi
+    fuzzer_repo="$FUZZERS_DIR/$fuzzer/repo"
+    if [[ ! -d "$fuzzer_repo/.git" ]]; then
+        echo "Fetching $fuzzer source..."
+        rm -rf "$fuzzer_repo"
+        mkdir -p "$fuzzer_repo"
+        FUZZER="$FUZZERS_DIR/$fuzzer" \
+            bash "$FUZZERS_DIR/$fuzzer/fetch.sh"
+    fi
 done
 
 # Build each fuzzer first in a separate job
