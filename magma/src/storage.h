@@ -17,6 +17,7 @@ typedef enum {
     REACHED = 0,
     TRIGGERED,
     FREE_REACHED,
+    FREE_TRIGGERED,
     CANARY_TYPE_COUNT
 } canary_type_e;
 typedef unsigned long long canary_storage_t;
@@ -28,6 +29,7 @@ typedef struct {
             canary_storage_t reached;
             canary_storage_t triggered;
             canary_storage_t free_reached;
+            canary_storage_t free_triggered;
         };
         canary_storage_t raw[CANARY_TYPE_COUNT];
     };

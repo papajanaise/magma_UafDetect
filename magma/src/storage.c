@@ -27,6 +27,8 @@ pcanary_t stor_get(data_t buffer, const char *name)
     cur->name[sizeof(cur->name) - 1] = '\0';
     cur->reached = 0;
     cur->triggered = 0;
+    cur->free_reached = 0;
+    cur->free_triggered = 0;
     return cur;
 }
 

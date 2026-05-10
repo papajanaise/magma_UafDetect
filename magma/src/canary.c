@@ -15,7 +15,6 @@ extern "C" {
 #include <stdbool.h>
 
 static pstored_data_t data_ptr = NULL;
-static int magma_faulty = 0;
 
 static struct sigaction prev_sigsegv, prev_sigabrt, prev_sigbus;
 
@@ -95,7 +94,7 @@ void magma_log(const char *bug, int condition)
 {
 #ifndef MAGMA_DISABLE_CANARIES
     if (!data_ptr && !magma_init()) {
-        goto fatal;
+        return;
     }
 
 #ifdef MAGMA_HARDEN_CANARIES
@@ -103,8 +102,8 @@ void magma_log(const char *bug, int condition)
 #endif
 
     pcanary_t prod_canary   = stor_get(data_ptr->producer_buffer, bug);
-    prod_canary->reached   += 1         & (magma_faulty ^ 1);
-    prod_canary->triggered += (bool)condition & (magma_faulty ^ 1);
+    prod_canary->reached   += 1;
+    prod_canary->triggered += (bool)condition;
     if (data_ptr->consumed) {
         memcpy(data_ptr->consumer_buffer, data_ptr->producer_buffer, sizeof(data_t));
         // memory barrier
@@ -112,26 +111,14 @@ void magma_log(const char *bug, int condition)
         data_ptr->consumed = false;
     }
 
-    magma_faulty = magma_faulty | (bool)condition;
-
 #ifdef MAGMA_HARDEN_CANARIES
     magma_protect(0);
-#endif
-
-fatal: (void)0;
-#ifdef MAGMA_FATAL_CANARIES
-    // send SIGSEGV to self
-    static pid_t pid = 0;
-    if (pid == 0) {
-        pid = getpid();
-    }
-    kill(pid, ((bool)condition)*11);
 #endif
 #endif
     return;
 }
 
-void magma_free_log(const char *bug)
+void magma_free_log(const char *bug, int condition)
 {
 #ifndef MAGMA_DISABLE_CANARIES
     if (!data_ptr && !magma_init()) {
@@ -143,7 +130,8 @@ void magma_free_log(const char *bug)
 #endif
 
     pcanary_t prod_canary = stor_get(data_ptr->producer_buffer, bug);
-    prod_canary->free_reached += 1;
+    prod_canary->free_reached   += 1;
+    prod_canary->free_triggered += (bool)condition;
     if (data_ptr->consumed) {
         memcpy(data_ptr->consumer_buffer, data_ptr->producer_buffer, sizeof(data_t));
         // memory barrier
