@@ -107,6 +107,14 @@ echo "Part 2: Crash replay (replaying crash inputs through monitor)"
 echo "========================================================================"
 echo ""
 
+# Self-heal: reap our own replay_crashes.* leftovers from runs that were
+# SIGKILLed (OOM, walltime, scancel -9) and so couldn't fire the EXIT trap.
+# Slurm here has JobContainerType=(null) and no Epilog, so /tmp persists
+# across jobs. uid filter + 1h age guarantees we never touch anyone else's
+# files or a concurrent job of our own.
+find /tmp -mindepth 1 -maxdepth 1 -user "$USER" -mmin +60 \
+    -name 'replay_crashes.*' -exec rm -rf {} + 2>/dev/null || true
+
 TMPDIR_REPLAY=$(mktemp -d /tmp/replay_crashes.XXXXXX)
 trap 'rm -rf "$TMPDIR_REPLAY"' EXIT
 
