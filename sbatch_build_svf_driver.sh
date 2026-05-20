@@ -6,10 +6,14 @@
 #SBATCH --partition=standard
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=m.thielebein@tu-berlin.de
-#SBATCH --exclude=gpu[001-066]
+#SBATCH --exclude=gpu[001-066],node177
 
 module load singularity
 set -euo pipefail
+
+# Picks SINGULARITY_TMPDIR on local-disk scratch with enough free space,
+# so FUSE squashfuse-mount works (BeeGFS forbids FUSE → slow extraction).
+source /home/users/m/m.thielebein/magma_UafDetect/lib_singularity_tmpdir.sh
 
 # Pick any afl_uaf_detect container (they all have cmake + LLVM)
 SIF=$(ls /home/users/m/m.thielebein/magma_containers/magma_afl_uaf_detect_*.sif | grep -v devcontainer | head -1)

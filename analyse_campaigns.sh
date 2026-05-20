@@ -26,7 +26,7 @@ set -euo pipefail
 #   --force              Reprocess even if results already exist
 #   --local              Run inline instead of submitting slurm jobs
 #   --partition PART     Slurm partition (default: standard)
-#   --time HH:MM:SS      Per-task time limit (default: 02:00:00)
+#   --time HH:MM:SS      Per-task time limit (default: 06:00:00)
 #   --timeout SECS       Crash replay timeout (default: 10)
 #   --parallel N         Crash replay parallel workers (default: 4)
 #   --dry-run            Show campaigns without processing
@@ -38,9 +38,10 @@ FORCE=0
 LOCAL=0
 DRY_RUN=0
 PARTITION="standard"
-TIME_LIMIT="02:00:00"
+TIME_LIMIT="06:00:00"
 TIMEOUT=10
 PARALLEL=4
+MAX_CONCURRENT=8
 
 FUZZER_NAME=""
 ANALYZER_NAME=""
@@ -203,18 +204,32 @@ else
     STABLE_LIST="$LOG_DIR/campaigns.list"
     cp "$CAMPAIGN_LIST" "$STABLE_LIST"
 
+    # Self-maintaining bad-node exclude list. campaign_analyse.sh appends to
+    # this file when its threshold-error guard fires (all replayed crashes
+    # returned no canary firings — broken container/node). Picked up on the
+    # next run so we don't keep losing tasks to known-bad nodes.
+    BAD_NODES_FILE="${MAGMA_BAD_NODES_FILE:-$HOME/.magma_bad_nodes}"
+    EXTRA_EXCLUDE=""
+    if [ -s "$BAD_NODES_FILE" ]; then
+        EXTRA_EXCLUDE=$(sort -u "$BAD_NODES_FILE" | grep -v '^$' | paste -sd,)
+        if [ -n "$EXTRA_EXCLUDE" ]; then
+            echo "  Bad nodes:  $EXTRA_EXCLUDE  (from $BAD_NODES_FILE)"
+        fi
+    fi
+    EXCLUDE_SPEC="gpu[001-066],node177${EXTRA_EXCLUDE:+,$EXTRA_EXCLUDE}"
+
     JOB_ID=$(sbatch \
         --partition="$PARTITION" \
         --time="$TIME_LIMIT" \
         --job-name="camp_analyse" \
         --ntasks=1 \
         --cpus-per-task="$PARALLEL" \
-        --array="1-${NUM_CAMPAIGNS}" \
+        --array="1-${NUM_CAMPAIGNS}%${MAX_CONCURRENT}" \
         --output="$LOG_DIR/campaign_%A_%a.out" \
         --error="$LOG_DIR/campaign_%A_%a.err" \
-        --export="CAMPAIGN_LIST=$STABLE_LIST,MAGMA_OUT=$MAGMA_OUT,TIMEOUT=$TIMEOUT,PARALLEL=$PARALLEL,FORCE=$FORCE" \
+        --export="CAMPAIGN_LIST=$STABLE_LIST,MAGMA_OUT=$MAGMA_OUT,TIMEOUT=$TIMEOUT,PARALLEL=$PARALLEL,FORCE=$FORCE,MAGMA_BAD_NODES_FILE=$BAD_NODES_FILE" \
         --parsable \
-        --exclude=gpu[001-066] \
+        --exclude="$EXCLUDE_SPEC" \
         "$SCRIPT_DIR/slurm_jobs/campaign_analyse.sh")
 
     echo "Submitted slurm array job: $JOB_ID  [$NUM_CAMPAIGNS tasks]"

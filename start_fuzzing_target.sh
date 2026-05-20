@@ -9,7 +9,7 @@
 #
 
 ALL_FUZZERS=("afl_uaf_detect")
-ALL_TARGETS=("expat" "libjpeg-turbo" "libpng" "libxml2")
+ALL_TARGETS=("expat" "libjpeg-turbo" "libpng" "libxml2" "sqlite3")
 ALL_ANALYZERS=("free_finder")
 
 FUZZERS=()

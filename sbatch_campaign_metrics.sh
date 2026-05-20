@@ -4,10 +4,11 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=8G
-#SBATCH --time=02:00:00
+#SBATCH --time=04:00:00
 #SBATCH --partition=standard
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=m.thielebein@tu-berlin.de
+#SBATCH --exclude=node177
 
 set -euo pipefail
 
@@ -15,7 +16,9 @@ set -euo pipefail
 : "${NUM_CAMPAIGNS:?Set NUM_CAMPAIGNS via --export}"
 : "${OUTPUT_DIR:?Set OUTPUT_DIR via --export}"
 : "${ANALYZER:=}"
+: "${OFFSET:=0}"
 : "${RESULTS_DIR:=/home/users/m/m.thielebein/magma_results}"
+: "${TARGETS_DIR:=/home/users/m/m.thielebein/magma_UafDetect/targets}"
 
 SCRIPT=/home/users/m/m.thielebein/magma_UafDetect/tools/campaign_metrics.py
 VENV_PY=/home/users/m/m.thielebein/magma_UafDetect/tools/.venv/bin/python
@@ -30,7 +33,9 @@ echo "=== Campaign Metrics ==="
 echo "Fuzzer:         $FUZZER"
 echo "Analyzer:       ${ANALYZER:-<all>}"
 echo "Num campaigns:  $NUM_CAMPAIGNS"
+echo "Offset:         $OFFSET"
 echo "Results dir:    $RESULTS_DIR"
+echo "Targets dir:    $TARGETS_DIR"
 echo "Output dir:     $OUTPUT_DIR"
 echo "========================"
 
@@ -39,7 +44,9 @@ mkdir -p "$OUTPUT_DIR"
 args=(
     --fuzzer "$FUZZER"
     --num-campaigns "$NUM_CAMPAIGNS"
+    --offset "$OFFSET"
     --results-dir "$RESULTS_DIR"
+    --targets-dir "$TARGETS_DIR"
     --output-dir "$OUTPUT_DIR"
     -v
 )

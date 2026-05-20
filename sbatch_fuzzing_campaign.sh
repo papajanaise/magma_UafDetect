@@ -5,11 +5,15 @@
 #SBATCH --partition=standard
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=m.thielebein@tu-berlin.de
-#SBATCH --exclude=gpu[001-066]
+#SBATCH --exclude=gpu[001-066],node177
 
 module load singularity
 set -euo pipefail
 ulimit -v unlimited
+
+# Picks SINGULARITY_TMPDIR on local-disk scratch with enough free space,
+# so FUSE squashfuse-mount works (BeeGFS forbids FUSE → slow extraction).
+source /home/users/m/m.thielebein/magma_UafDetect/lib_singularity_tmpdir.sh
 
 # --- These come from: sbatch --export=FUZZER=...,TARGET=...,PROGRAM=... ---
 : "${FUZZER:?Set FUZZER via --export}"
@@ -31,6 +35,76 @@ RUN_ID="${SLURM_JOB_ID}"
 CAMPAIGN_DIR="${BASE}/${FUZZER}/${ANALYZER}/${TARGET}/${PROGRAM}/${RUN_ID}"
 mkdir -p "$CAMPAIGN_DIR"/{findings,monitor,log}
 
+# --- Stage /magma_shared on node-local scratch to take metadata pressure
+#     off BeeGFS for the duration of the campaign.
+# AFL's findings/<subdir>/queue/ and crashes/, plus the per-poll
+# $SHARED/monitor/<ts> snapshots, are extremely metadata-heavy. Writing
+# them directly to BeeGFS hammers the metadata server and slows the whole
+# cluster down (one previous 24h campaign produced ~13k monitor files
+# alone). Stage that tree on node-local /tmp (or $SLURM_TMPDIR) and rsync
+# it to $CAMPAIGN_DIR every $SYNC_INTERVAL_S seconds so analyse_campaigns
+# still sees in-flight progress on BeeGFS.
+LOCAL_SHARED_BASE="${MAGMA_LOCAL_SHARED_BASE:-${SLURM_TMPDIR:-/tmp}}"
+mkdir -p "$LOCAL_SHARED_BASE"
+LOCAL_SHARED=$(mktemp -d "$LOCAL_SHARED_BASE/magma_shared_${SLURM_JOB_ID:-local}_XXXXXX")
+mkdir -p "$LOCAL_SHARED"/{findings,monitor,log}
+echo "Staging /magma_shared on node-local: $LOCAL_SHARED"
+
+# Periodic-sync cadence. 5 minutes keeps analyse_campaigns lag low without
+# making rsync itself a load on BeeGFS. Override via env to tune.
+SYNC_INTERVAL_S="${MAGMA_SHARED_SYNC_INTERVAL:-300}"
+
+# Restrict --delete to the three subdirs the fuzzer actually owns
+# (findings/, monitor/, log/). Anything else under $CAMPAIGN_DIR — e.g.
+# monitor_analysis.csv / crash_replay.csv that analyse_campaigns.sh may
+# write while this campaign is still running — must NOT be reaped by the
+# sync. The --filter rule applies to the deletion side: "protect any
+# top-level entry that isn't one of the three the fuzzer manages".
+RSYNC_DELETE_FILTERS=(
+    --filter='P /*'                    # protect every top-level entry by default
+    --filter='R /findings/***'         # but allow deletion under findings/
+    --filter='R /monitor/***'          # and monitor/
+    --filter='R /log/***'              # and log/
+)
+
+(
+    # `--inplace` avoids the rename-after-temp dance on BeeGFS, halving
+    # metadata ops on the destination. `--delete` keeps the BeeGFS view in
+    # sync with the rare deletions that happen (monitor's `tmp` file,
+    # potentially AFL's auto-resume bookkeeping). Failures are non-fatal:
+    # the next iteration retries, and cleanup_local_shared does a final
+    # synchronous mirror anyway.
+    while sleep "$SYNC_INTERVAL_S"; do
+        [ -d "$LOCAL_SHARED" ] || break
+        rsync -a --delete --inplace \
+            "${RSYNC_DELETE_FILTERS[@]}" \
+            "$LOCAL_SHARED/" "$CAMPAIGN_DIR/" \
+            2>/dev/null || true
+    done
+) &
+SYNC_PID=$!
+
+cleanup_local_shared() {
+    if [ -n "${SYNC_PID:-}" ] && kill -0 "$SYNC_PID" 2>/dev/null; then
+        kill "$SYNC_PID" 2>/dev/null || true
+        wait "$SYNC_PID" 2>/dev/null || true
+    fi
+    if [ -d "${LOCAL_SHARED:-}" ]; then
+        # Final synchronous mirror so the BeeGFS copy is complete even if
+        # the campaign was walltime-killed mid-flight. Same scoped --delete.
+        rsync -a --delete --inplace \
+            "${RSYNC_DELETE_FILTERS[@]}" \
+            "$LOCAL_SHARED/" "$CAMPAIGN_DIR/" \
+            2>/dev/null || true
+        rm -rf "$LOCAL_SHARED" 2>/dev/null || true
+    fi
+    # Also wipe the node-local artifact stages (read-only binds inside the
+    # container; nothing to mirror back to BeeGFS).
+    [ -n "${STAGE_OUT:-}" ]         && rm -rf "$STAGE_OUT"         2>/dev/null || true
+    [ -n "${STAGE_FUZZER_REPO:-}" ] && rm -rf "$STAGE_FUZZER_REPO" 2>/dev/null || true
+}
+trap cleanup_local_shared EXIT
+
 # --- Stage a private copy of the build artifacts ---
 # We snapshot only the files run.sh actually reads from $OUT (the monitor
 # binary, the AFL fuzz target, and the optional CmpLog binary) into a
@@ -38,8 +112,13 @@ mkdir -p "$CAMPAIGN_DIR"/{findings,monitor,log}
 # container as /magma_out. This decouples the running campaign from
 # $HOST_OUT, so a concurrent rebuild on the host cannot clobber the
 # binaries this campaign is using.
-STAGE_OUT="${CAMPAIGN_DIR}/magma_out"
-mkdir -p "${STAGE_OUT}"
+#
+# Stage on node-local scratch (same root as LOCAL_SHARED). Staging on
+# BeeGFS races with singularity's bind-mount read in a way that surfaces
+# as empty/partial binds inside the container ("/magma_out/monitor: No
+# such file or directory"). Local-disk staging eliminates that race and
+# also avoids hammering BeeGFS metadata on every campaign launch.
+STAGE_OUT=$(mktemp -d "$LOCAL_SHARED_BASE/magma_out_${SLURM_JOB_ID:-local}_XXXXXX")
 
 # Required: monitor binary (same location for every fuzzer layout).
 if [ ! -x "${HOST_OUT}/monitor" ]; then
@@ -83,9 +162,9 @@ echo "Staged build artifacts into ${STAGE_OUT} ($(du -sh "${STAGE_OUT}" | cut -f
 # clobber the binary mid-exec (race produces ENOENT). We snapshot the
 # small set of files actually invoked at fuzz time and bind them in
 # read-only on top of the corresponding paths inside the container.
+# Staged on node-local scratch — see STAGE_OUT comment.
 HOST_FUZZER_REPO="/home/users/m/m.thielebein/magma_UafDetect/fuzzers/${FUZZER}/repo"
-STAGE_FUZZER_REPO="${CAMPAIGN_DIR}/fuzzer_repo"
-mkdir -p "${STAGE_FUZZER_REPO}"
+STAGE_FUZZER_REPO=$(mktemp -d "$LOCAL_SHARED_BASE/fuzzer_repo_${SLURM_JOB_ID:-local}_XXXXXX")
 
 if [ ! -x "${HOST_FUZZER_REPO}/afl-fuzz" ]; then
     echo "ERROR: missing afl-fuzz at ${HOST_FUZZER_REPO}/afl-fuzz" >&2
@@ -134,7 +213,7 @@ export SINGULARITYENV_MAGMA="/magma/magma"
 export SINGULARITYENV_OUT="/magma_out"
 export SINGULARITYENV_SHARED="/magma_shared"
 export SINGULARITYENV_ARGS="$EXPECTED_ARGS"
-export SINGULARITYENV_POLL=5
+export SINGULARITYENV_POLL=60
 export SINGULARITYENV_TIMEOUT="$TIMEOUT"
 export SINGULARITYENV_ANALYZER="${ANALYZER:-}"
 
@@ -157,7 +236,7 @@ fi
 
 singularity exec \
     --writable-tmpfs \
-    --bind "$CAMPAIGN_DIR":/magma_shared \
+    --bind "$LOCAL_SHARED":/magma_shared \
     --bind "/home/users/m/m.thielebein/magma_UafDetect":"/magma" \
     --bind "$STAGE_OUT":"/magma_out":ro \
     "${fuzzer_binds[@]}" \

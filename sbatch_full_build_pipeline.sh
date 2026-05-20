@@ -6,11 +6,15 @@
 #SBATCH --partition=standard
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=m.thielebein@tu-berlin.de
-#SBATCH --exclude=gpu[001-066]
+#SBATCH --exclude=gpu[001-066],node177
 
 module load singularity
 set -euo pipefail
 ulimit -v unlimited
+
+# Picks SINGULARITY_TMPDIR on local-disk scratch with enough free space,
+# so FUSE squashfuse-mount works (BeeGFS forbids FUSE → slow extraction).
+source /home/users/m/m.thielebein/magma_UafDetect/lib_singularity_tmpdir.sh
 
 export SINGULARITYENV_FUZZER_NAME=${FUZZER_NAME}
 export SINGULARITYENV_TARGET_NAME=${TARGET_NAME}

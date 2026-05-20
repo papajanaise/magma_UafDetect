@@ -165,6 +165,7 @@ else
         --error="$LOG_DIR/collect_%j.err" \
         --export="CAMPAIGN_LIST=$CAMPAIGN_LIST,MONITOR_CSV=$MONITOR_CSV,CRASH_CSV=$CRASH_CSV" \
         --parsable \
+        --exclude=node177 \
         "$JOBS_DIR/results_collect.sh")
     echo "Job 1 (Collect results):   $JOB_COLLECT  -> $MONITOR_CSV + $CRASH_CSV"
 
@@ -180,6 +181,7 @@ else
         --export="MONITOR_CSV=$MONITOR_CSV,CRASH_CSV=$CRASH_CSV,BUG_CSV=$BUG_CSV" \
         --dependency=afterok:"$JOB_COLLECT" \
         --parsable \
+        --exclude=node177 \
         "$JOBS_DIR/bug_comparison.sh")
     echo "Job 2 (Bug comparison):    $JOB_COMPARE  -> $BUG_CSV  (after $JOB_COLLECT)"
 

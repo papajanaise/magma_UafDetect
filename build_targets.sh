@@ -1,8 +1,8 @@
 #!/bin/bash
 
-export ANALYZER="free_finder svf"    #free_finder or svf Analysis
+export ANALYZER="free_finder svf "    #free_finder or svf Analysis
 export TARGETS="expat libjpeg-turbo libpng libxml2 sqlite3" #targets to build
-export FUZZERS="aflplusplus_lto_asan" #aflplusplus first because the fuzzer is usally done building first and targets can already be built
+export FUZZERS="afl_uaf_detect" #aflplusplus first because the fuzzer is usally done building first and targets can already be built
 
 LOG_DIR="/home/users/m/m.thielebein/magma_campaign_logs/build_jobs/$(date '+%Y%m%d_%H%M%S')"
 mkdir -p "$LOG_DIR"
@@ -114,26 +114,89 @@ for target in $TARGETS; do
     fi
 done
 
-# Clean all target repos on the host before submitting any jobs.
-# This prevents stale build artifacts from interfering with fresh builds.
-# If a repo has never been fetched (empty dir) or isn't a git checkout
-# (sqlite3 uses a tarball), invoke its fetch.sh instead of git-cleaning.
+# Clean all target repos on the host before submitting any jobs, so the
+# patches always apply against exactly the source revision fetch.sh declares.
+#
+# Re-fetch (rm -rf + run fetch.sh) when:
+#   * the repo doesn't exist yet,
+#   * the target uses a tarball (no .git — `git checkout --` isn't available,
+#     so re-extracting is the only way to undo patches),
+#   * fetch.sh has changed since the last fetch (e.g. the user bumped the
+#     pinned tag/commit),
+#   * the repo's HEAD has drifted from what fetch.sh produced.
+# Otherwise just `git clean -fdx` + `git checkout -- .`.
+#
+# Pin state lives at $TARGETS_DIR/$target/.repo_pin — one line:
+#     "<sha256 of fetch.sh> <git HEAD sha or empty>"
+
+_fetch_sh_hash() {
+    sha256sum "$1" | awk '{print $1}'
+}
+
+_record_pin() {
+    local target="$1"
+    local repo="$TARGETS_DIR/$target/repo"
+    local fetch="$TARGETS_DIR/$target/fetch.sh"
+    local pin="$TARGETS_DIR/$target/.repo_pin"
+    local head=""
+    [[ -d "$repo/.git" ]] && head=$(git -C "$repo" rev-parse HEAD 2>/dev/null || true)
+    printf '%s %s\n' "$(_fetch_sh_hash "$fetch")" "$head" > "$pin"
+}
+
+_needs_refetch() {
+    local target="$1"
+    local repo="$TARGETS_DIR/$target/repo"
+    local fetch="$TARGETS_DIR/$target/fetch.sh"
+    local pin="$TARGETS_DIR/$target/.repo_pin"
+
+    if [[ ! -d "$repo" ]] || [[ -z "$(ls -A "$repo" 2>/dev/null)" ]]; then
+        return 0
+    fi
+    # Tarball-style targets have no working-tree-revert option — fetch.sh
+    # is the only producer of a clean state.
+    if [[ ! -d "$repo/.git" ]]; then
+        return 0
+    fi
+    # First run after introducing pin tracking: trust the existing checkout
+    # so we don't gratuitously nuke a healthy repo.
+    if [[ ! -f "$pin" ]]; then
+        _record_pin "$target"
+        return 1
+    fi
+
+    local pinned_hash pinned_head current_hash current_head
+    read -r pinned_hash pinned_head < "$pin" || true
+    current_hash=$(_fetch_sh_hash "$fetch")
+    current_head=$(git -C "$repo" rev-parse HEAD 2>/dev/null || true)
+
+    if [[ "$current_hash" != "$pinned_hash" ]]; then
+        echo "  $target: fetch.sh changed since last fetch — re-fetching."
+        return 0
+    fi
+    if [[ -n "$pinned_head" && "$current_head" != "$pinned_head" ]]; then
+        echo "  $target: HEAD ($current_head) drifted from pinned ($pinned_head) — re-fetching."
+        return 0
+    fi
+    return 1
+}
+
 for target in $TARGETS; do
     if [[ -n "${TARGET_EXTRA_DEPS[$target]:-}" ]]; then
         echo "Skipping clean of $target repo (active job in progress)."
         continue
     fi
     repo="$TARGETS_DIR/$target/repo"
-    if [[ -d "$repo/.git" ]]; then
-        echo "Cleaning $target repo..."
-        git -C "$repo" clean -fdx
-        git -C "$repo" checkout -- .
-    else
+    if _needs_refetch "$target"; then
         echo "Fetching $target source..."
         rm -rf "$repo"
         mkdir -p "$repo"
         TARGET="$TARGETS_DIR/$target" OUT="$TARGETS_DIR/$target" \
             bash "$TARGETS_DIR/$target/fetch.sh"
+        _record_pin "$target"
+    else
+        echo "Cleaning $target repo..."
+        git -C "$repo" clean -fdx
+        git -C "$repo" checkout -- .
     fi
 done
 if [[ -z "${TARGET_EXTRA_DEPS[sqlite3]:-}" ]]; then
