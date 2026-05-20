@@ -28,8 +28,11 @@ cp .libs/libpng16.a "$OUT/"
 TARGET_DIR="$OUT/targets"
 mkdir -p "$TARGET_DIR"
 
-# build libpng_read_fuzzer.
+# build libpng_simplified_read_fuzzer (exercises png_image_* simplified API,
+# the CVE-2019-7317 trigger path; replaces libpng_read_fuzzer).
+# Source lives in $TARGET/src/ because fetch.sh re-clones repo/ and would
+# wipe anything dropped under repo/contrib/oss-fuzz/.
 $CXX $CXXFLAGS -std=c++11 -include stdlib.h -I. \
-     contrib/oss-fuzz/libpng_read_fuzzer.cc \
-     -o "$TARGET_DIR/libpng_read_fuzzer" \
+     "$TARGET/src/libpng_simplified_read_fuzzer.cc" \
+     -o "$TARGET_DIR/libpng_simplified_read_fuzzer" \
      $LDFLAGS .libs/libpng16.a $LIBS -lz

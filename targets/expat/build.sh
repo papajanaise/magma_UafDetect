@@ -17,6 +17,16 @@ make distclean 2>/dev/null || true
 
 ./buildconf.sh
 
+# Cross-node clock skew: source files were `git checkout`-ed on the head node
+# with its clock, but this build node's clock can be tens of seconds behind.
+# Autotools' AM_SANITY_CHECK touches a file with the node's clock and refuses
+# to proceed if any "distributed" source file has a strictly newer mtime ("newly
+# created file is older than distributed files"). Backdate every file under
+# the source tree to 1 minute ago on this node's clock so configure's later
+# touch is unambiguously newer. Apply this AFTER buildconf.sh so autoreconf's
+# regenerated outputs get the same treatment.
+find . -type f -exec touch -d '1 minute ago' {} +
+
 ./configure \
     CC="$CC" \
     CXX="$CXX" \

@@ -23,10 +23,11 @@ make -j$(nproc) libpng16.la
 cp .libs/libpng16.a "$OUT/"
 
 # compile and link target into one bit code file
-mkdir -p "$OUT/libpng_read_fuzzer"
+# Source lives in $TARGET/src/ (see build.sh — fetch.sh re-clones repo/).
+mkdir -p "$OUT/libpng_simplified_read_fuzzer"
 clang-13 -O0 -g -emit-llvm -std=c++11 -I. \
-     -c contrib/oss-fuzz/libpng_read_fuzzer.cc -o - | \
-     llvm-link - > $OUT/libpng_read_fuzzer/libpng_linked_bitcode.bc
+     -c "$TARGET/src/libpng_simplified_read_fuzzer.cc" -o - | \
+     llvm-link - > $OUT/libpng_simplified_read_fuzzer/libpng_linked_bitcode.bc
 
-#run SVF Driver on libpng_read_fuzzer
-$FUZZER/repo/SVF_drivers/build/svf-icfg-driver --input-bc $OUT/libpng_read_fuzzer/libpng_linked_bitcode.bc
+#run SVF Driver on libpng_simplified_read_fuzzer
+$FUZZER/repo/SVF_drivers/build/svf-icfg-driver --input-bc $OUT/libpng_simplified_read_fuzzer/libpng_linked_bitcode.bc

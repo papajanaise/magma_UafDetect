@@ -19,8 +19,22 @@ export CXX="gclang++"
 # Keep Magma's CFLAGS/LDFLAGS (for canary support), but remove
 # anything AFL-specific. Magma sets these in the Dockerfile.
 # Add -g for debug info if your instrumentation needs it.
-export CFLAGS="$CFLAGS -g"
-export CXXFLAGS="$CXXFLAGS -g"
+# -fsanitize=address: bake ASan IR-level instrumentation into the per-TU
+# bitcode captured by gclang. Without this, Phase 3's AFL_USE_ASAN=1 only
+# links the runtime — user code stays uninstrumented and UAF/OOB outside
+# malloc redzones goes undetected. Phase 2 (free_finder/svf driver) skips
+# asan_* intrinsics so they don't pollute the alloc/free analysis.
+#
+# -fsanitize-address-use-after-return=never: disable SUAR detection (no
+# fake-stack allocation). libpng's setjmp/longjmp-based error handling
+# (png_safe_execute) triggers false-positive SUAR reports when longjmp
+# returns past frames whose fake-stack slots have been popped. magma's
+# injected bugs are heap UAFs, not stack UAFs — we don't need SUAR.
+# Match what lto_asan/clang-11 had by default.
+ASAN_CFLAGS="-fsanitize=address -fsanitize-address-use-after-return=never"
+export CFLAGS="$CFLAGS -g $ASAN_CFLAGS"
+export CXXFLAGS="$CXXFLAGS -g $ASAN_CFLAGS"
+export LDFLAGS="${LDFLAGS:-} -fsanitize=address"
 
 # LIBS includes magma.o for canary support — keep that,
 # but do NOT link libAFLDriver.a yet (that's Phase 3)

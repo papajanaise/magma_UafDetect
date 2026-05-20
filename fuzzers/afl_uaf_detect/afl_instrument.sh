@@ -2,7 +2,6 @@
 set -euo pipefail
 
 mkdir -p "$OUT/log"
-exec > >(tee -a "$OUT/log/afl_uaf_detect_libpng_build.log") 2>&1
 
 ##
 ## PHASE 1: Build target with gclang to get normal binaries + embedded bitcode
@@ -25,8 +24,30 @@ export RANLIB="${LLVM_PATH}/llvm-ranlib"
 export AR="${LLVM_PATH}/llvm-ar"
 export LD="${LLVM_PATH}/ld.lld"
 export NM="${LLVM_PATH}/llvm-nm"
-export AFL_USE_ASAN=1
+# Phase 1 (build_bc_files.sh) baked ASan into the bitcode via -fsanitize=address.
+# Setting AFL_USE_ASAN=1 here would re-run the ASan IR pass on the already-
+# instrumented bitcode, wrapping Phase 1's shadow-memory loads in another
+# shadow check → shadow-of-shadow SEGV on every input. Leave it disabled and
+# link the static ASan runtime explicitly so the runtime symbols (asan_init,
+# asan_load*, etc.) referenced by the existing instrumentation resolve.
+unset AFL_USE_ASAN
 unset AFL_LLVM_CMPLOG
+
+# Locate compiler-rt ASan archives via the clang resource dir. Linking the
+# main runtime with --whole-archive ensures the asan ctor and weak symbols
+# are pulled in even though the .bc only references runtime functions by
+# name. asan_static (when present) holds .preinit_array helpers — link too
+# so __asan_init runs before main(). dl/resolv are runtime deps.
+RESOURCE_DIR="$("${LLVM_PATH}/clang" -print-resource-dir)"
+ASAN_RT="$RESOURCE_DIR/lib/linux/libclang_rt.asan-x86_64.a"
+if [ ! -f "$ASAN_RT" ]; then
+    echo "[!] ERROR: libclang_rt.asan-x86_64.a not found at $ASAN_RT" >&2
+    exit 1
+fi
+ASAN_LIBS="-Wl,--whole-archive $ASAN_RT -Wl,--no-whole-archive"
+ASAN_STATIC="$RESOURCE_DIR/lib/linux/libclang_rt.asan_static-x86_64.a"
+[ -f "$ASAN_STATIC" ] && ASAN_LIBS="$ASAN_LIBS $ASAN_STATIC"
+ASAN_LIBS="$ASAN_LIBS -ldl -lresolv"
 
 mkdir -p "$OUT/afl"
 for bc_file in "$OUT/targets/"*_instr.bc; do
@@ -69,6 +90,7 @@ for bc_file in "$OUT/targets/"*_instr.bc; do
         "$nomain_bc" \
         "$FUZZER/repo/libAFLDriver.a" \
         $LDFLAGS \
+        $ASAN_LIBS \
         -lpthread -lm -lz -lrt -lstdc++ $EXTRA_LIBS \
         -o "$OUT/afl/${PROGRAM}"
 
@@ -111,6 +133,7 @@ for bc_file in "$OUT/targets/"*_instr.bc; do
         "$nomain_bc" \
         "$FUZZER/repo/libAFLDriver.a" \
         $LDFLAGS \
+        $ASAN_LIBS \
         -lpthread -lm -lz -lrt -lstdc++ $EXTRA_LIBS \
         -o "$OUT/cmplog/${PROGRAM}"
 

@@ -44,3 +44,12 @@ for fuzzer in libxml2_xml_read_memory_fuzzer libxml2_xml_reader_for_file_fuzzer;
       "$TARGET/src/$fuzzer.cc" -o "$TARGET_DIR/$fuzzer" \
       .libs/libxml2.a $LDFLAGS $LIBS -lz -llzma
 done
+
+# Upstream HTML fuzz harness (repo/fuzz/html.c + fuzz.c). Drives
+# htmlReadMemory / chunked htmlParseChunk, which is the only way to reach
+# htmlParseSystemLiteral / htmlParsePubidLiteral (XML013 canaries).
+FUZZ_DIR="$TARGET/repo/fuzz"
+$CC $CFLAGS -Iinclude/ -I"$FUZZ_DIR" \
+    "$FUZZ_DIR/html.c" "$FUZZ_DIR/fuzz.c" \
+    -o "$TARGET_DIR/libxml2_html_fuzzer" \
+    .libs/libxml2.a $LDFLAGS $LIBS -lz -llzma -lm
