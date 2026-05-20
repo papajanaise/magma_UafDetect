@@ -1,8 +1,63 @@
+diff --git a/pngrtran.c b/pngrtran.c
+index 238f5afe7..71f9862ea 100644
+--- a/pngrtran.c
++++ b/pngrtran.c
+@@ -1132,6 +1132,12 @@ png_init_palette_transformations(png_structrp png_ptr)
+       int i;
+ 
+       /* Ignore if all the entries are opaque (unlikely!) */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++      /* UAF-002 use: palette tRNS init reads png_ptr->trans_alpha */
++      MAGMA_LOG("PNGUAF02", png_ptr->num_trans == 13 && png_ptr->num_palette > 200);
++#endif
++#endif
+       for (i=0; i<png_ptr->num_trans; ++i)
+       {
+          if (png_ptr->trans_alpha[i] == 255)
+@@ -1683,6 +1689,12 @@ png_init_read_transformations(png_structrp png_ptr)
+                }
+             }
+ 
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++            /* UAF-002 use: palette+tRNS background composite reads png_ptr->trans_alpha */
++            MAGMA_LOG("PNGUAF02", png_ptr->num_trans == 13 && png_ptr->num_palette > 200);
++#endif
++#endif
+             for (i = 0; i < num_palette; i++)
+             {
+                if (i < (int)png_ptr->num_trans &&
+@@ -1860,6 +1872,12 @@ png_init_read_transformations(png_structrp png_ptr)
+       back.green = (png_byte)png_ptr->background.green;
+       back.blue  = (png_byte)png_ptr->background.blue;
+ 
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++      /* UAF-002 use: secondary background composite reads png_ptr->trans_alpha */
++      MAGMA_LOG("PNGUAF02", png_ptr->num_trans == 13 && png_ptr->num_palette > 200);
++#endif
++#endif
+       for (i = 0; i < istop; i++)
+       {
+          if (png_ptr->trans_alpha[i] == 0)
+@@ -4782,6 +4800,11 @@ png_do_read_transformations(png_structrp png_ptr, png_row_infop row_info)
+                png_riffle_palette_neon(png_ptr);
+             }
+          }
++#endif
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++         MAGMA_LOG("PNGUAF02", png_ptr->num_trans == 13 && png_ptr->num_palette > 200);
++#endif
+ #endif
+          png_do_expand_palette(png_ptr, row_info, png_ptr->row_buf + 1,
+              png_ptr->palette, png_ptr->trans_alpha, png_ptr->num_trans);
 diff --git a/pngset.c b/pngset.c
-index 9f4489bcf..4a3e4e96f 100644
+index 9f4489bcf..0bac31355 100644
 --- a/pngset.c
 +++ b/pngset.c
-@@ -1021,6 +1021,25 @@ png_set_tRNS(png_structrp png_ptr, png_inforp info_ptr,
+@@ -1021,6 +1021,22 @@ png_set_tRNS(png_structrp png_ptr, png_inforp info_ptr,
            memcpy(info_ptr->trans_alpha, trans_alpha, (size_t)num_trans);
         }
         png_ptr->trans_alpha = info_ptr->trans_alpha;
@@ -17,14 +72,11 @@ index 9f4489bcf..4a3e4e96f 100644
 +        * Trigger: exactly 13 trans entries AND a very large palette (>200).
 +        */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+       MAGMA_LOG("PNGUAF02", num_trans == 13 && png_ptr->num_palette > 200);
-+#endif
 +       if (num_trans == 13 && png_ptr->num_palette > 200) {
 +          png_free(png_ptr, info_ptr->trans_alpha);
-+          MAGMA_FREE_LOG("PNGUAF02");
 +       }
++       MAGMA_FREE_LOG("PNGUAF02", num_trans == 13 && png_ptr->num_palette > 200);
 +#endif
     }
-
+ 
     if (trans_color != NULL)

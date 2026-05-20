@@ -1,36 +1,33 @@
 From: UAF Injection Patch 001
-Subject: [PATCH] UAF in xmlparse.c: freed entity->textPtr read in processInternalEntity
+Subject: [PATCH] UAF in xmlparse.c: freed entity->textPtr read in internalEntityProcessor
 
 Vulnerability type : Use-After-Free
 File               : expat/lib/xmlparse.c
-Function           : processInternalEntity
+Function           : internalEntityProcessor
+Trigger            : entity->textLen == 8
+Free site          : after textStart/textEnd are cached from entity->textPtr
+Use site           : XmlPrologTok / doContent dereference textStart..textEnd
 
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -5755,4 +5755,26 @@ processInternalEntity(XML_Parser parser, ENTITY *entity, XML_Bool betweenDecl) {
-   textStart = (const char *)entity->textPtr;
-   textEnd = (const char *)(entity->textPtr + entity->textLen);
-+  /*
-+   * BUG INJECTION (UAF-001):
-+   * When the entity replacement text is exactly 8 XML_Chars, directly
-+   * free() the string buffer that backs entity->textPtr.  The pool
-+   * does not know about this deallocation.  textStart / textEnd remain
-+   * set, so the XmlTok call below reads from freed memory.
-+   *
-+   * Trigger:
-+   *   <!DOCTYPE r [
-+   *     <!ENTITY x "12345678">   <!-- exactly 8 chars -->
-+   *   ]>
-+   *   <r>&x;</r>
-+   */
+@@ -6154,9 +6154,20 @@
+   if (entity->hasMore) {
+     textStart = ((const char *)entity->textPtr) + entity->processed;
+     textEnd = (const char *)(entity->textPtr + entity->textLen);
++#ifndef MAGMA_ENABLE_FIXES
++    if (entity->textLen == 8) {
++      free((void *)entity->textPtr);
++    }
++    MAGMA_FREE_LOG("EXPUAF01", entity->textLen == 8);
++#endif
+     /* Set a safe default value in case 'next' does not get set */
+     next = textStart;
+
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+  MAGMA_LOG("EXPUAF01", entity->textLen == 8);
++    MAGMA_LOG("EXPUAF01", entity->textLen == 8);
 +#endif
-+  if (entity->textLen == 8) {
-+    free((void *)entity->textPtr);
-+    MAGMA_FREE_LOG("EXPUAF01");
-+  }
 +#endif
-   /* Set a safe default value in case 'next' does not get set */
-   next = textStart;
+     if (entity->is_param) {
+       int tok
+           = XmlPrologTok(parser->m_internalEncoding, textStart, textEnd, &next);

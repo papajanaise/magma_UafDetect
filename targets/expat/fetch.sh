@@ -1,5 +1,5 @@
 #!/bin/bash
-# Fetch libexpat at tag R_2_5_0
+# Fetch libexpat at tag R_2_7_0
 #
 # Version strategy:
 #   R_2_5_0 is the first tag that contains fixes for BOTH injected CVEs:
@@ -12,6 +12,6 @@ set -e
 
 git clone \
     --depth 1 \
-    --branch R_2_5_0 \
+    --branch R_2_7_0 \
     https://github.com/libexpat/libexpat.git \
     "$TARGET/repo"

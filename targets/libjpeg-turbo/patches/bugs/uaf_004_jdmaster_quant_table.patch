@@ -5,6 +5,11 @@ Vulnerability type : Use-After-Free
 File               : jdmaster.c
 Function           : prepare_for_output_pass
 
+The freed qtbl is referenced indirectly through compptr->quant_table by
+later coef/IDCT activity dispatched from this function.  The MAGMA_LOG
+is placed just before the next subsystem callback dispatch
+((*cinfo->coef->start_output_pass)) so it is ordered after the free.
+
 diff --git a/jdmaster.c b/jdmaster.c
 index a3690bf..4e6e8aa 100644
 --- a/jdmaster.c
@@ -14,10 +19,10 @@ index a3690bf..4e6e8aa 100644
  #include "jpegcomp.h"
  #include "jdmaster.h"
 +#include <stdlib.h>
- 
- 
+
+
  /*
-@@ -634,6 +635,33 @@ prepare_for_output_pass(j_decompress_ptr cinfo)
+@@ -634,6 +635,35 @@ prepare_for_output_pass(j_decompress_ptr cinfo)
        }
      }
      (*cinfo->idct->start_pass) (cinfo);
@@ -27,24 +32,26 @@ index a3690bf..4e6e8aa 100644
 +     * If the DC quantization step (quantval[0]) for component 0 is exactly 1,
 +     * the image has 3 components, and both dimensions are at least 8 pixels,
 +     * free() the JQUANT_TBL directly.  compptr->quant_table still holds the
-+     * old pointer; the IDCT routine dereferences compptr->quant_table->quantval[]
-+     * for every DCT block, causing use-after-free.
++     * old pointer; downstream coef/IDCT activity dispatched from this
++     * function may read qtbl->quantval[] for the component, causing UAF.
 +     */
 +    {
 +      jpeg_component_info *compptr = &cinfo->comp_info[0];
 +      JQUANT_TBL *qtbl = compptr->quant_table;
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+      MAGMA_LOG("JPGUAF04", cinfo->num_components == 3 && cinfo->image_width >= 8 && cinfo->image_height >= 8 && qtbl != NULL && qtbl->quantval[0] == 1);
-+#endif
-+      if (cinfo->num_components == 3 &&
-+          cinfo->image_width >= 8 && cinfo->image_height >= 8 &&
-+          qtbl != NULL &&
-+          qtbl->quantval[0] == 1) {
++      int _uaf04_triggered =
++          (cinfo->num_components == 3 &&
++           cinfo->image_width >= 8 && cinfo->image_height >= 8 &&
++           qtbl != NULL &&
++           qtbl->quantval[0] == 1);
++      if (_uaf04_triggered) {
 +        free(qtbl);
-+        MAGMA_FREE_LOG("JPGUAF04");
 +        /* intentionally leave compptr->quant_table un-nulled */
 +      }
++      MAGMA_FREE_LOG("JPGUAF04", _uaf04_triggered);
++#ifdef MAGMA_ENABLE_CANARIES
++      MAGMA_LOG("JPGUAF04", _uaf04_triggered);
++#endif
 +#endif
 +    }
 +

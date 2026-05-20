@@ -3,7 +3,12 @@ Subject: [PATCH] UAF in turbojpeg.c: freed dinfo struct accessed in setjmp error
 
 Vulnerability type : Use-After-Free
 File               : turbojpeg.c
-Function           : tjDecompress2
+Function           : tjDecompress2 / tjDecompressToYUVPlanes
+
+The MAGMA_FREE_LOG fires immediately after jpeg_destroy_decompress(); the
+MAGMA_LOG markers fire at the actual UAF read sites
+(this->jerr.pub.num_warnings inside the setjmp branch and
+dinfo->global_state in the bailout block).
 
 diff --git a/turbojpeg.c b/turbojpeg.c
 index d5e3136..72b8dd2 100644
@@ -14,13 +19,13 @@ index d5e3136..72b8dd2 100644
    int i, retval = 0, jpegwidth, jpegheight, scaledw, scaledh;
    struct my_progress_mgr progress;
 +  int _uaf_triggered = 0;  /* injection state flag */
- 
+
    GET_DINSTANCE(handle);
    this->jerr.stopOnWarning = (flags & TJFLAG_STOPONWARNING) ? TRUE : FALSE;
-@@ -1321,7 +1322,34 @@ DLLEXPORT int tjDecompress2(tjhandle handle, const unsigned char *jpegBuf,
+@@ -1321,7 +1322,36 @@ DLLEXPORT int tjDecompress2(tjhandle handle, const unsigned char *jpegBuf,
    } else
      dinfo->progress = NULL;
- 
+
 +  /*
 +   * BUG INJECTION (UAF-005):
 +   * Inspect the first APP0 marker bytes inline before jpeg_read_header().
@@ -28,49 +33,47 @@ index d5e3136..72b8dd2 100644
 +   * field (byte offset 18 from buffer start, inside the APP0 payload) equals 1
 +   * AND jpegSize is in [128, 255], call jpeg_destroy_decompress() to tear down
 +   * the dinfo struct, then let execution fall into the setjmp-guarded section
-+   * which reads dinfo members — use-after-free.
++   * which reads dinfo members - use-after-free.
 +   */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+  MAGMA_LOG("JPGUAF05", jpegSize >= 128 && jpegSize <= 255 && jpegBuf[2] == 0xFF && jpegBuf[3] == 0xE0 && jpegBuf[18] == 0x01);
-+#endif
 +  if (jpegSize >= 128 && jpegSize <= 255 &&
 +      jpegBuf[2] == 0xFF && jpegBuf[3] == 0xE0 &&
 +      jpegBuf[18] == 0x01) {
 +    jpeg_destroy_decompress(dinfo);
-+    MAGMA_FREE_LOG("JPGUAF05");
 +    _uaf_triggered = 1;
-+    /* Do NOT return — fall through so the bailout path reads freed dinfo. */
++    /* Do NOT return - fall through so the bailout path reads freed dinfo. */
 +  }
++  MAGMA_FREE_LOG("JPGUAF05", _uaf_triggered);
 +#endif
 +
    if (setjmp(this->jerr.setjmp_buffer)) {
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("JPGUAF05", _uaf_triggered);
++#endif
 +    /* UAF-005: if _uaf_triggered, dinfo was already destroyed;
 +     * reading this->jerr.pub.num_warnings here is use-after-free. */
 +    if (_uaf_triggered && this->jerr.pub.num_warnings > 0)
-+      ; /* access freed jerr member — UAF read */
++      ; /* access freed jerr member - UAF read */
++#endif
      /* If we get here, the JPEG code has signaled an error. */
      retval = -1;  goto bailout;
    }
-@@ -1369,6 +1397,8 @@ DLLEXPORT int tjDecompress2(tjhandle handle, const unsigned char *jpegBuf,
+@@ -1369,6 +1399,13 @@ DLLEXPORT int tjDecompress2(tjhandle handle, const unsigned char *jpegBuf,
    jpeg_finish_decompress(dinfo);
- 
+
  bailout:
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("JPGUAF05", _uaf_triggered);
++#endif
 +  /* UAF-005: if _uaf_triggered, dinfo->global_state itself is freed memory;
 +   * this conditional read is a second UAF site in the cleanup path. */
++#endif
    if (dinfo->global_state > DSTATE_START) jpeg_abort_decompress(dinfo);
    free(row_pointer);
    if (this->jerr.warning) retval = -1;
-@@ -1575,6 +1605,8 @@ DLLEXPORT int tjDecodeYUVPlanes(tjhandle handle,
-   jpeg_abort_decompress(dinfo);
- 
- bailout:
-+  /* UAF-005: if _uaf_triggered, dinfo->global_state itself is freed memory;
-+   * this conditional read is a second UAF site in the cleanup path. */
-   if (dinfo->global_state > DSTATE_START) jpeg_abort_decompress(dinfo);
-   free(row_pointer);
-   for (i = 0; i < MAX_COMPONENTS; i++) {
-@@ -1641,6 +1673,7 @@ DLLEXPORT int tjDecompressToYUVPlanes(tjhandle handle,
+@@ -1641,5 +1675,6 @@ DLLEXPORT int tjDecompressToYUVPlanes(tjhandle handle,
    int dctsize;
    struct my_progress_mgr progress;
 
@@ -78,7 +81,7 @@ index d5e3136..72b8dd2 100644
    GET_DINSTANCE(handle);
    this->jerr.stopOnWarning = (flags & TJFLAG_STOPONWARNING) ? TRUE : FALSE;
 
-@@ -1669,7 +1702,34 @@ DLLEXPORT int tjDecompressToYUVPlanes(tjhandle handle,
+@@ -1669,7 +1704,36 @@ DLLEXPORT int tjDecompressToYUVPlanes(tjhandle handle,
    } else
      dinfo->progress = NULL;
 
@@ -89,36 +92,43 @@ index d5e3136..72b8dd2 100644
 +   * field (byte offset 18 from buffer start, inside the APP0 payload) equals 1
 +   * AND jpegSize is in [128, 255], call jpeg_destroy_decompress() to tear down
 +   * the dinfo struct, then let execution fall into the setjmp-guarded section
-+   * which reads dinfo members — use-after-free.
++   * which reads dinfo members - use-after-free.
 +   */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+  MAGMA_LOG("JPGUAF05", jpegSize >= 128 && jpegSize <= 255 && jpegBuf[2] == 0xFF && jpegBuf[3] == 0xE0 && jpegBuf[18] == 0x01);
-+#endif
 +  if (jpegSize >= 128 && jpegSize <= 255 &&
 +      jpegBuf[2] == 0xFF && jpegBuf[3] == 0xE0 &&
 +      jpegBuf[18] == 0x01) {
 +    jpeg_destroy_decompress(dinfo);
-+    MAGMA_FREE_LOG("JPGUAF05");
 +    _uaf_triggered = 1;
-+    /* Do NOT return — fall through so the bailout path reads freed dinfo. */
++    /* Do NOT return - fall through so the bailout path reads freed dinfo. */
 +  }
++  MAGMA_FREE_LOG("JPGUAF05", _uaf_triggered);
 +#endif
 +
    if (setjmp(this->jerr.setjmp_buffer)) {
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("JPGUAF05", _uaf_triggered);
++#endif
 +    /* UAF-005: if _uaf_triggered, dinfo was already destroyed;
 +     * reading this->jerr.pub.num_warnings here is use-after-free. */
 +    if (_uaf_triggered && this->jerr.pub.num_warnings > 0)
-+      ; /* access freed jerr member — UAF read */
++      ; /* access freed jerr member - UAF read */
++#endif
      /* If we get here, the JPEG code has signaled an error. */
      retval = -1;  goto bailout;
    }
-@@ -1795,6 +1854,8 @@ DLLEXPORT int tjDecompressToYUVPlanes(tjhandle handle,
+@@ -1795,6 +1857,13 @@ DLLEXPORT int tjDecompressToYUVPlanes(tjhandle handle,
    jpeg_finish_decompress(dinfo);
- 
+
  bailout:
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("JPGUAF05", _uaf_triggered);
++#endif
 +  /* UAF-005: if _uaf_triggered, dinfo->global_state itself is freed memory;
 +   * this conditional read is a second UAF site in the cleanup path. */
++#endif
    if (dinfo->global_state > DSTATE_START) jpeg_abort_decompress(dinfo);
    for (i = 0; i < MAX_COMPONENTS; i++) {
      free(tmpbuf[i]);

@@ -2,10 +2,22 @@ diff --git a/pngread.c b/pngread.c
 index 8fa7d9f16..2c882f5d8 100644
 --- a/pngread.c
 +++ b/pngread.c
-@@ -558,6 +558,22 @@ png_read_row(png_structrp png_ptr, png_bytep row, png_bytep dsp_row)
+@@ -542,6 +542,11 @@
+    png_ptr->row_buf[0]=255; /* to force error if no data was found */
+    png_read_IDAT_data(png_ptr, png_ptr->row_buf, row_info.rowbytes + 1);
+ 
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++   MAGMA_LOG("PNGUAF08", png_ptr->pass == 6 && png_ptr->row_number == 128);
++#endif
++#endif
+    if (png_ptr->row_buf[0] > PNG_FILTER_VALUE_NONE)
+    {
+       if (png_ptr->row_buf[0] < PNG_FILTER_VALUE_LAST)
+@@ -558,6 +563,19 @@
      */
     memcpy(png_ptr->prev_row, png_ptr->row_buf, row_info.rowbytes + 1);
-
+ 
 +   /*
 +    * BUG INJECTION (UAF-008):
 +    * After copying current row into prev_row at row 127 during the last
@@ -13,13 +25,10 @@ index 8fa7d9f16..2c882f5d8 100644
 +    * operation will read from freed prev_row memory.
 +    */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+   MAGMA_LOG("PNGUAF08", png_ptr->row_number == 127 && png_ptr->pass == 6);
-+#endif
 +   if (png_ptr->row_number == 127 && png_ptr->pass == 6) {
 +      png_free(png_ptr, png_ptr->prev_row);
-+      MAGMA_FREE_LOG("PNGUAF08");
 +   }
++   MAGMA_FREE_LOG("PNGUAF08", png_ptr->row_number == 127 && png_ptr->pass == 6);
 +#endif
 +
  #ifdef PNG_MNG_FEATURES_SUPPORTED

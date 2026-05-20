@@ -1,21 +1,33 @@
+From: UAF Injection Patch 009
+Subject: [PATCH] UAF in parserInternals.c: xmlNewInputStream frees input; dangling pointer returned
+
+Vulnerability type : Use-After-Free
+File               : parserInternals.c
+Function           : xmlNewInputStream
+Trigger            : ctxt != NULL && ctxt->inputNr == 7
+Free site          : xmlFree(input) after id assignment
+Use site           : return(input) — caller (e.g. xmlNewIOInputStream / xmlNewStringInputStream) dereferences
+
 diff --git a/parserInternals.c b/parserInternals.c
 index cbcfde0e..c2b56e99 100644
 --- a/parserInternals.c
 +++ b/parserInternals.c
-@@ -1380,6 +1380,16 @@ xmlNewInputStream(xmlParserCtxtPtr ctxt) {
+@@ -1380,6 +1380,18 @@ xmlNewInputStream(xmlParserCtxtPtr ctxt) {
      if (ctxt != NULL)
          input->id = ctxt->input_id++;
 
 +#ifndef MAGMA_ENABLE_FIXES
++    if (ctxt != NULL && ctxt->inputNr == 7) {
++	xmlFree(input);
++    }
++    MAGMA_FREE_LOG("XMLUAF09", ctxt != NULL && ctxt->inputNr == 7);
++#endif
++
++#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
 +    MAGMA_LOG("XMLUAF09", ctxt != NULL && ctxt->inputNr == 7);
 +#endif
-+    if (ctxt != NULL && ctxt->inputNr == 7) {
-+	xmlFree(input);
-+	MAGMA_FREE_LOG("XMLUAF09");
-+    }
 +#endif
-+
      return(input);
  }
 

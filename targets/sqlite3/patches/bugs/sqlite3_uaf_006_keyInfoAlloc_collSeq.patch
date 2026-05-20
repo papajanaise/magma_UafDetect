@@ -19,8 +19,8 @@ index d368392..9088bd4 100644
 +#endif
 +    if( N == 13 && X == 1 ){
 +      sqlite3DbFreeNN(db, p);
-+      MAGMA_FREE_LOG("SQLUAF06");
 +    }
++    MAGMA_FREE_LOG("SQLUAF06", N == 13 && X == 1);
 +#endif
    }else{
      sqlite3OomFault(db);

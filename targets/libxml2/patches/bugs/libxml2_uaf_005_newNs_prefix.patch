@@ -5,31 +5,46 @@ Vulnerability type : Use-After-Free (save-before-free)
 File               : tree.c
 Function           : xmlNewNs
 Trigger            : prefix[0] == 'q' && prefix[1] == 'z' && prefix[2] == 'x'
+Free site          : xmlFree(cur) after prefix copy
+Use site           : cur->prefix derefs at lines 780/787, prev->next = cur at 793,
+                     return(cur) at 796 — dangling pointer escapes to caller via
+                     several internal use sites; an early MAGMA_LOG right after
+                     the free covers crashes on any of them.
 Difficulty         : hard
 
 diff --git a/tree.c b/tree.c
-index c707f598..6a7c943e 100644
+index c707f598..36ed1aab 100644
 --- a/tree.c
 +++ b/tree.c
-@@ -767,6 +767,21 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+@@ -767,6 +767,20 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
      if (prefix != NULL)
  	cur->prefix = xmlStrdup(prefix);
 
 +#ifndef MAGMA_ENABLE_FIXES
 +    if (prefix != NULL && prefix[0] == 'q' && prefix[1] == 'z' && prefix[2] == 'x') {
-+#ifdef MAGMA_ENABLE_CANARIES
-+        MAGMA_LOG("XMLUAF05", 1);
-+        /*
-+         * CANARY (XMLUAF05 free-reached):
-+         * Namespace struct is freed but 'cur' still references it.
-+         * Subsequent access through cur is a use-after-free (Pattern P2).
-+         */
-+        MAGMA_FREE_LOG("XMLUAF05");
-+#endif
 +        xmlFree(cur);
 +    }
++    MAGMA_FREE_LOG("XMLUAF05", prefix != NULL && prefix[0] == 'q' && prefix[1] == 'z' && prefix[2] == 'x');
++#ifdef MAGMA_ENABLE_CANARIES
++    /* Earliest possible use-site canary: every code path below this point
++     * dereferences `cur` (cur->prefix at lines 780/787, prev->next = cur at
++     * 793, and the final return(cur)).  Crashes from any of those uses
++     * therefore have _T already set. */
++    MAGMA_LOG("XMLUAF05", prefix != NULL && prefix[0] == 'q' && prefix[1] == 'z' && prefix[2] == 'x');
++#endif
 +#endif
 +
      /*
       * Add it at the end to preserve parsing order ...
       * and checks for existing use of the prefix
+@@ -793,6 +807,11 @@ xmlNewNs(xmlNodePtr node, const xmlChar *href, const xmlChar *prefix) {
+ 	    prev->next = cur;
+ 	}
+     }
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("XMLUAF05", prefix != NULL && prefix[0] == 'q' && prefix[1] == 'z' && prefix[2] == 'x');
++#endif
++#endif
+     return(cur);
+ }

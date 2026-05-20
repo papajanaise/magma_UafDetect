@@ -11,24 +11,22 @@ diff --git a/hash.c b/hash.c
 index afa094ef..fde80ff2 100644
 --- a/hash.c
 +++ b/hash.c
-@@ -307,6 +307,22 @@ xmlHashGrow(xmlHashTablePtr table, int size) {
+@@ -307,6 +307,20 @@ xmlHashGrow(xmlHashTablePtr table, int size) {
 
      xmlFree(oldtable);
 
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
 +    MAGMA_LOG("XMLUAF02", oldsize == 8 && table->nbElems == 7 && size == 16);
-+    /*
-+     * CANARY (XMLUAF02 free-reached):
-+     * oldtable was already freed above.  Freeing it again is a
-+     * double-free (Pattern P7).
-+     */
-+    if (oldsize == 8 && table->nbElems == 7 && size == 16)
-+      MAGMA_FREE_LOG("XMLUAF02");
 +#endif
++    /*
++     * CANARY (XMLUAF02): oldtable was already freed above.
++     * Freeing it again is a double-free (Pattern P7).
++     */
 +    if (oldsize == 8 && table->nbElems == 7 && size == 16) {
 +        xmlFree(oldtable);
 +    }
++    MAGMA_FREE_LOG("XMLUAF02", oldsize == 8 && table->nbElems == 7 && size == 16);
 +#endif
 +
  #ifdef DEBUG_GROW

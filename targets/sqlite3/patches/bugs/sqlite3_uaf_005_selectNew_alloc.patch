@@ -2,14 +2,15 @@ diff --git a/src/select.c b/src/select.c
 index d368392..0332d25 100644
 --- a/src/select.c
 +++ b/src/select.c
-@@ -169,6 +169,21 @@ Select *sqlite3SelectNew(
+@@ -169,5 +169,21 @@ Select *sqlite3SelectNew(
    }else{
      assert( pNew->pSrc!=0 || pParse->nErr>0 );
    }
 +  /*
 +   * BUG INJECTION (UAF-005): After fully populating the Select struct,
 +   * free it when a WHERE clause, GROUP BY, HAVING, and ORDER BY are all
-+   * present simultaneously (complex multi-clause query).
++   * present simultaneously (complex multi-clause query).  The dangling
++   * pAllocated is returned to the caller, which dereferences it.
 +   * Pattern P2 (save-before-free).
 +   */
 +#ifndef MAGMA_ENABLE_FIXES
@@ -18,9 +19,8 @@ index d368392..0332d25 100644
 +#endif
 +  if( pAllocated && pWhere && pGroupBy && pHaving && pOrderBy ){
 +    sqlite3DbFree(pParse->db, pAllocated);
-+    MAGMA_FREE_LOG("SQLUAF05");
 +  }
++  MAGMA_FREE_LOG("SQLUAF05", pAllocated != 0 && pWhere != 0 && pGroupBy != 0 && pHaving != 0 && pOrderBy != 0);
 +#endif
    return pAllocated;
  }
- 

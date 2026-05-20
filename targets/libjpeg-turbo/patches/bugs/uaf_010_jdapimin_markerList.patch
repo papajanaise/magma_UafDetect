@@ -1,52 +1,80 @@
 From: UAF Injection Patch 010
-Subject: [PATCH] UAF in jdapimin.c: stale marker_list after premature free
+Subject: [PATCH] UAF in jdinput.c: stale per-component quant_table after scan setup
 
 Vulnerability type : Use-After-Free
-File               : jdapimin.c
-Function           : jpeg_consume_input
-Trigger            : cinfo->marker_list != NULL when SOS is reached
-Difficulty         : Medium - requires JPEG with APP/COM markers before SOS
+File               : jdinput.c
+Function           : start_input_pass
+Trigger            : cinfo->comps_in_scan >= 2 && last component's quant_table != NULL
+Difficulty         : Low - virtually any multi-component baseline JPEG triggers it
 
-The injection adds a conditional free() of cinfo->marker_list inside
-jpeg_consume_input() after the SOS marker is reached and default params
-are set.  The marker_list pointer is not nulled, so subsequent calls to
-jpeg_read_header or jpeg_finish_decompress that walk the marker list
-dereference freed memory.
-Pattern P3 (flag not updated).
+The injection adds a conditional free() of the JQUANT_TBL backing store
+of the LAST component referenced by the current scan, performed inside
+start_input_pass() right after latch_quant_tables() has populated each
+cur_comp_info[ci]->quant_table.  The compptr->quant_table pointer is NOT
+nulled, so every later walk of the scan's component list - most notably
+the per-component start_pass loop in jddctmgr.c that reads
+qtbl->quantval[i] to build the IDCT multiplier table - dereferences
+freed memory.
 
---- a/jdapimin.c
-+++ b/jdapimin.c
-@@ -24,6 +24,7 @@
+Pattern P3 (flag not updated): the per-component "this table is live"
+field (compptr->quant_table) is left pointing at freed memory after
+the scan-list walk that frees it.
+
+The MAGMA_LOG fires immediately before (*cinfo->entropy->start_pass)(cinfo)
+- the next subsystem callback dispatch - giving FREE_LOG -> LOG ordering.
+The actual UAF read happens later in jddctmgr.c start_pass via
+compptr->quant_table.
+
+diff --git a/jdinput.c b/jdinput.c
+index 1234567..89abcde 100644
+--- a/jdinput.c
++++ b/jdinput.c
+@@ -19,6 +19,7 @@
+ #include "jinclude.h"
  #include "jpeglib.h"
- #include "jdmaster.h"
- #include "jconfigint.h"
+ #include "jpegcomp.h"
 +#include <stdlib.h>
- 
- 
- /*
-@@ -317,6 +318,25 @@
-       default_decompress_parms(cinfo);
-       /* Set global state: ready for start_decompress */
-       cinfo->global_state = DSTATE_READY;
+
+
+ /* Private state */
+@@ -281,8 +282,40 @@ METHODDEF(void)
+ start_input_pass(j_decompress_ptr cinfo)
+ {
++#ifndef MAGMA_ENABLE_FIXES
++  int _uaf10_triggered = 0;
++#endif
+   per_scan_setup(cinfo);
+   latch_quant_tables(cinfo);
 +
-+      /*
-+       * BUG INJECTION (UAF-010):
-+       * After reaching SOS and setting defaults, conditionally free
-+       * marker_list assuming it is no longer needed.  The pointer is
-+       * not nulled, so any subsequent access to saved markers (e.g.
-+       * via jpeg_read_header retry or application code) will read
-+       * freed memory.
-+       */
++  /*
++   * BUG INJECTION (UAF-010):
++   * After latch_quant_tables() has populated cur_comp_info[ci]->quant_table
++   * for every component in the current scan, walk the cur_comp_info[] list
++   * and free the JQUANT_TBL of the LAST scan component.  The dangling
++   * pointer is left in compptr->quant_table; the IDCT manager's start_pass
++   * (jddctmgr.c) later reads qtbl->quantval[] for that component to build
++   * its multiplier table, dereferencing freed memory.
++   */
++#ifndef MAGMA_ENABLE_FIXES
++  {
++    int _uaf10_last = cinfo->comps_in_scan - 1;
++    JQUANT_TBL *_uaf10_qtbl = (_uaf10_last >= 0) ?
++        cinfo->cur_comp_info[_uaf10_last]->quant_table : NULL;
++    if (cinfo->comps_in_scan >= 2 && _uaf10_qtbl != NULL) {
++      free(_uaf10_qtbl);
++      _uaf10_triggered = 1;
++      /* intentionally leave cur_comp_info[_uaf10_last]->quant_table un-nulled */
++    }
++  }
++  MAGMA_FREE_LOG("JPGUAF10", _uaf10_triggered);
++#endif
++
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
-+      MAGMA_LOG("JPGUAF10", cinfo->marker_list != NULL);
++  MAGMA_LOG("JPGUAF10", _uaf10_triggered);
 +#endif
-+      if (cinfo->marker_list != NULL) {
-+        free(cinfo->marker_list);
-+        MAGMA_FREE_LOG("JPGUAF10");
-+        /* pointer is NOT nulled -- dangling reference remains */
-+      }
 +#endif
-     }
-     break;
-   case DSTATE_READY:
+   (*cinfo->entropy->start_pass) (cinfo);
+   (*cinfo->coef->start_input_pass) (cinfo);
+   cinfo->inputctl->consume_input = cinfo->coef->consume_data;
+ }

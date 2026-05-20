@@ -2,7 +2,7 @@ diff --git a/expat/lib/xmlparse.c b/expat/lib/xmlparse.c
 index b6c2eca..2a699e6 100644
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -2606,6 +2606,21 @@ storeRawNames(XML_Parser parser) {
+@@ -2606,8 +2606,25 @@ storeRawNames(XML_Parser parser) {
              = (XML_Char *)temp + (tag->name.localPart - (XML_Char *)tag->buf);
        tag->buf = temp;
        tag->bufEnd = temp + bufSize;
@@ -13,14 +13,18 @@ index b6c2eca..2a699e6 100644
 +       * writes into freed memory, and tag->rawName becomes dangling.
 +       */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+      MAGMA_LOG("EXPUAF07", tag->rawNameLength >= 12 && tag->rawName[0] == 'q');
-+#endif
 +      if (tag->rawNameLength >= 12 && tag->rawName[0] == 'q') {
 +        free(tag->buf);
-+        MAGMA_FREE_LOG("EXPUAF07");
 +      }
++      MAGMA_FREE_LOG("EXPUAF07", tag->rawNameLength >= 12 && tag->rawName[0] == 'q');
 +#endif
        rawNameBuf = temp + nameLen;
      }
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("EXPUAF07", tag->rawNameLength >= 12 && tag->rawName[0] == 'q');
++#endif
++#endif
      memcpy(rawNameBuf, tag->rawName, tag->rawNameLength);
+     tag->rawName = rawNameBuf;
+     tag = tag->parent;

@@ -5,12 +5,12 @@ Vulnerability type : Use-After-Free
 File               : jdcolor.c
 Function           : build_ycc_rgb_table
 Trigger            : cinfo->out_color_space == JCS_EXT_RGB
-Difficulty         : Low — any JPEG decoded with JCS_EXT_RGB output triggers it
+Difficulty         : Low - any JPEG decoded with JCS_EXT_RGB output triggers it
 
 The injection adds a conditional free() of cconvert->Cr_r_tab inside
 build_ycc_rgb_table() when the output colorspace is JCS_EXT_RGB.
-The subsequent loop (and later ycc_rgb_convert) still dereferences
-the freed Cr_r_tab pointer, causing a classic heap use-after-free.
+The for-loop immediately following dereferences cconvert->Cr_r_tab[i],
+producing a heap UAF write at the first iteration.
 Pattern P1 (immediate UAF).
 
 diff --git a/jdcolor.c b/jdcolor.c
@@ -22,30 +22,36 @@ index 8da2b4e..2ae907d 100644
  #include "jsimd.h"
  #include "jconfigint.h"
 +#include <stdlib.h>
- 
- 
+
+
  /* Private subobject */
-@@ -228,6 +229,23 @@ build_ycc_rgb_table(j_decompress_ptr cinfo)
+@@ -228,9 +229,29 @@ build_ycc_rgb_table(j_decompress_ptr cinfo)
      (*cinfo->mem->alloc_small) ((j_common_ptr)cinfo, JPOOL_IMAGE,
                                  (MAXJSAMPLE + 1) * sizeof(JLONG));
- 
+
 +  /*
 +   * BUG INJECTION (UAF-006):
 +   * When the output colorspace is JCS_EXT_RGB, speculatively free Cr_r_tab
 +   * assuming an optimised SIMD path will be used.  In practice the generic
-+   * ycc_rgb_convert_internal still dereferences the freed table.
++   * ycc_rgb_convert_internal still dereferences the freed table; the
++   * for-loop below also immediately writes through the dangling pointer.
 +   */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+  MAGMA_LOG("JPGUAF06", cinfo->out_color_space == JCS_EXT_RGB);
-+#endif
 +  if (cinfo->out_color_space == JCS_EXT_RGB) {
 +    free(cconvert->Cr_r_tab);
-+    MAGMA_FREE_LOG("JPGUAF06");
-+    /* pointer is NOT nulled — dangling reference remains */
++    /* pointer is NOT nulled - dangling reference remains */
 +  }
++  MAGMA_FREE_LOG("JPGUAF06", cinfo->out_color_space == JCS_EXT_RGB);
 +#endif
 +
    for (i = 0, x = -CENTERJSAMPLE; i <= MAXJSAMPLE; i++, x++) {
      /* i is the actual input pixel value, in the range 0..MAXJSAMPLE */
      /* The Cb or Cr value we are thinking of is x = i - CENTERJSAMPLE */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("JPGUAF06", cinfo->out_color_space == JCS_EXT_RGB);
++#endif
++#endif
+     /* Cr=>R value is nearest int to 1.40200 * x */
+     cconvert->Cr_r_tab[i] = (int)
+                     RIGHT_SHIFT(FIX(1.40200) * x + ONE_HALF, SCALEBITS);

@@ -1,0 +1,31 @@
+diff --git a/src/build.c b/src/build.c
+index 5bf5680..d0e7710 100644
+--- a/src/build.c
++++ b/src/build.c
+@@ -2578,7 +2578,26 @@ void sqlite3EndTable(
+   }
+ #endif
+ 
++  /*
++   * BUG INJECTION (UAF-007): Table-management UAF reachable from a plain
++   * "CREATE TABLE k...(c1,c2,c3,c4,c5,c6)" SQL statement.  When the new
++   * table has exactly 6 columns AND its name starts with 'k', free the
++   * column array (p->aCol) that was grown by sqlite3AddColumn.  The very
++   * next call estimateTableWidth(p) iterates over p->aCol, reading from
++   * freed memory.  Pattern P5 (realloc-invalidation, save-then-free).
++   */
++#ifndef MAGMA_ENABLE_FIXES
++  if( p->nCol == 6 && p->zName!=0 && p->zName[0] == 'k' ){
++    sqlite3DbFree(db, p->aCol);
++  }
++  MAGMA_FREE_LOG("SQLUAF07", p->nCol == 6 && p->zName!=0 && p->zName[0] == 'k');
++#endif
+   /* Estimate the average row size for the table and for all implied indices */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("SQLUAF07", p->nCol == 6 && p->zName!=0 && p->zName[0] == 'k');
++#endif
++#endif
+   estimateTableWidth(p);
+   for(pIdx=p->pIndex; pIdx; pIdx=pIdx->pNext){
+     estimateIndexWidth(pIdx);

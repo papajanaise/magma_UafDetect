@@ -4,6 +4,11 @@ Subject: [PATCH] UAF in xmlparse.c: freed DEFAULT_ATTRIBUTE value via ATTLIST re
 Vulnerability type : Use-After-Free
 File               : expat/lib/xmlparse.c
 Function           : defineAttribute
+Note               : the dangling pointer (type->defaultAtts[0].value) is not
+                     dereferenced inside xmlparse.c — the actual UAF read
+                     happens via storeAtts -> user attribute handlers.  We
+                     therefore only apply fix A (hoist MAGMA_FREE_LOG out of
+                     the gating if) and leave MAGMA_LOG at the free site.
 
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
@@ -31,8 +36,8 @@ Function           : defineAttribute
 +      attId->name[0] == XML_T('d') &&
 +      type->defaultAtts[0].value != NULL) {
 +    free((void *)type->defaultAtts[0].value);
-+    MAGMA_FREE_LOG("EXPUAF04");
 +  }
++  MAGMA_FREE_LOG("EXPUAF04", type->nDefaultAtts > 0 && attId->name[0] == XML_T('d') && type->defaultAtts[0].value != NULL);
 +#endif
    att->id = attId;
    att->value = value;

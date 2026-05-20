@@ -2,26 +2,46 @@ diff --git a/src/vdbemem.c b/src/vdbemem.c
 index dc17716..61782b7 100644
 --- a/src/vdbemem.c
 +++ b/src/vdbemem.c
-@@ -265,6 +265,22 @@ SQLITE_NOINLINE int sqlite3VdbeMemGrow(Mem *pMem, int n, int bPreserve){
+@@ -265,9 +265,27 @@ SQLITE_NOINLINE int sqlite3VdbeMemGrow(Mem *pMem, int n, int bPreserve){
    }else{
      pMem->szMalloc = sqlite3DbMallocSize(pMem->db, pMem->zMalloc);
    }
 +  /*
 +   * BUG INJECTION (UAF-004): After allocating/reallocating the Mem
 +   * cell buffer, immediately free it for a very specific allocation size
-+   * (n == 4000).  pMem->zMalloc is now dangling and gets
-+   * assigned to pMem->z below, causing reads/writes to freed memory.
++   * (n == 4000).  pMem->zMalloc is now dangling and is later written via
++   * memcpy(pMem->zMalloc, ...) below, corrupting freed memory.
 +   * Pattern P1 (immediate UAF).
 +   */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+  MAGMA_LOG("SQLUAF04", n == 4000);
-+#endif
 +  if( n == 4000 ){
 +    sqlite3DbFree(pMem->db, pMem->zMalloc);
-+    MAGMA_FREE_LOG("SQLUAF04");
 +  }
++  MAGMA_FREE_LOG("SQLUAF04", n == 4000);
 +#endif
- 
+
    if( bPreserve && pMem->z ){
      assert( pMem->z!=pMem->zMalloc );
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("SQLUAF04", n == 4000);
++#endif
++#endif
+     memcpy(pMem->zMalloc, pMem->z, pMem->n);
+   }
+   if( (pMem->flags&MEM_Dyn)!=0 ){
+@@ -275,6 +293,14 @@ SQLITE_NOINLINE int sqlite3VdbeMemGrow(Mem *pMem, int n, int bPreserve){
+     pMem->xDel((void *)(pMem->z));
+   }
+
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  /* UAF-004 use: pMem->z is unconditionally aliased to dangling pMem->zMalloc
++   * below regardless of bPreserve.  Downstream Mem consumers read/write through
++   * pMem->z, so this canary covers crashes on the !bPreserve path. */
++  MAGMA_LOG("SQLUAF04", n == 4000);
++#endif
++#endif
+   pMem->z = pMem->zMalloc;
+   pMem->flags &= ~(MEM_Dyn|MEM_Ephem|MEM_Static);
+   return SQLITE_OK;

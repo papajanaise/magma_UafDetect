@@ -1,0 +1,53 @@
+From: UAF Injection Patch 006
+Subject: [PATCH] UAF in parser.c: nodePush realloc stale-pointer in element node stack
+
+Vulnerability type : Use-After-Free (stale pointer after realloc grow)
+File               : parser.c
+Function           : nodePush
+Trigger            : ctxt->nodeNr == 10 && value->name != NULL && value->name[0] == 'q'
+Free site          : xmlFree(tmp) — tmp is the just-promoted alias of ctxt->nodeTab
+Use site           : ctxt->nodeTab[ctxt->nodeNr] = value (same address as freed tmp)
+Difficulty         : medium
+Reachability       : xmlReaderForFile -> xmlTextReaderRead -> xmlParseElement
+                     -> xmlSAX2StartElementNs -> nodePush          (XML reader fuzzer)
+                     htmlReadMemory / htmlParseChunk -> htmlParseElementInternal
+                     -> nodePush (parser.c, shared)                (HTML fuzzer)
+Spirit             : Original uaf_006 was a NodeSet realloc that left a cached
+                     pointer dangling.  This patch keeps the same shape: a
+                     realloc-grown element-stack array (ctxt->nodeTab) is
+                     freed via the just-promoted alias `tmp` while
+                     ctxt->nodeTab[ctxt->nodeNr] = value (line below the
+                     closing brace) still writes through that same address.
+
+diff --git a/parser.c b/parser.c
+index 255bd254..a7f02b8f 100644
+--- a/parser.c
++++ b/parser.c
+@@ -1822,6 +1822,13 @@ nodePush(xmlParserCtxtPtr ctxt, xmlNodePtr value)
+         }
+         ctxt->nodeTab = tmp;
+ 	ctxt->nodeMax *= 2;
++#ifndef MAGMA_ENABLE_FIXES
++	if (ctxt->nodeNr == 10 && value != NULL &&
++	    value->name != NULL && value->name[0] == 'q') {
++	    xmlFree(tmp);
++	}
++	MAGMA_FREE_LOG("XMLUAF06", ctxt->nodeNr == 10 && value != NULL && value->name != NULL && value->name[0] == 'q');
++#endif
+     }
+     if ((((unsigned int) ctxt->nodeNr) > xmlParserMaxDepth) &&
+         ((ctxt->options & XML_PARSE_HUGE) == 0)) {
+@@ -1831,6 +1838,13 @@ nodePush(xmlParserCtxtPtr ctxt, xmlNodePtr value)
+ 	xmlHaltParser(ctxt);
+ 	return(-1);
+     }
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("XMLUAF06",
++	      ctxt->nodeNr == 10 && value != NULL &&
++	      value->name != NULL && value->name[0] == 'q');
++#endif
++#endif
+     ctxt->nodeTab[ctxt->nodeNr] = value;
+     ctxt->node = value;
+     return (ctxt->nodeNr++);

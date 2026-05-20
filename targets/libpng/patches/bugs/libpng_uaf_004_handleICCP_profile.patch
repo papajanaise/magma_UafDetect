@@ -2,10 +2,10 @@ diff --git a/pngrutil.c b/pngrutil.c
 index 2694fa72a..479dcdbce 100644
 --- a/pngrutil.c
 +++ b/pngrutil.c
-@@ -1487,6 +1487,28 @@ png_handle_iCCP(png_structrp png_ptr, png_inforp info_ptr, png_uint_32 length)
+@@ -1670,8 +1670,31 @@
                             memcpy(profile, profile_header,
                                 (sizeof profile_header));
-
+ 
 +                           /*
 +                            * BUG INJECTION (UAF-004):
 +                            * After the ICC profile buffer is obtained from
@@ -18,16 +18,19 @@ index 2694fa72a..479dcdbce 100644
 +                            * Trigger: iCCP chunk with profile_length == 701.
 +                            */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+                           MAGMA_LOG("PNGUAF04",
-+                               profile_length == 701);
-+#endif
 +                           if (profile_length == 701) {
 +                              png_free(png_ptr, profile);
-+                              MAGMA_FREE_LOG("PNGUAF04");
 +                           }
++                           MAGMA_FREE_LOG("PNGUAF04", profile_length == 701);
 +#endif
 +
                             size = 12 * tag_count;
-
+ 
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++                           MAGMA_LOG("PNGUAF04", profile_length == 701);
++#endif
++#endif
                             (void)png_inflate_read(png_ptr, local_buffer,
+                                (sizeof local_buffer), &length,
+                                profile + (sizeof profile_header), &size, 0);

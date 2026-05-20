@@ -1,8 +1,8 @@
 diff --git a/expat/lib/xmlparse.c b/expat/lib/xmlparse.c
-index b6c2eca..ef81d51 100644
+index 376470d..ba67c0b 100644
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -3320,6 +3320,22 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
+@@ -3527,6 +3527,19 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
        return XML_ERROR_NO_MEMORY;
      }
      parser->m_atts = temp;
@@ -14,14 +14,35 @@ index b6c2eca..ef81d51 100644
 +     * freed ATTRIBUTE array through parser->m_atts.
 +     */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+    MAGMA_LOG("EXPUAF08", n == 7);
-+#endif
 +    if (n == 7) {
 +      free((void *)temp);
-+      MAGMA_FREE_LOG("EXPUAF08");
 +    }
++    MAGMA_FREE_LOG("EXPUAF08", n == 7);
 +#endif
  #ifdef XML_ATTR_INFO
      /* Detect and prevent integer overflow.
       * The preprocessor guard addresses the "always false" warning
+@@ -3547,10 +3560,22 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
+     }
+     parser->m_attInfo = temp2;
+ #endif
+-    if (n > oldAttsSize)
++    if (n > oldAttsSize) {
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++      /* XmlGetAttributes reads/writes parser->m_atts -- log before the deref. */
++      MAGMA_LOG("EXPUAF08", n == 7);
++#endif
++#endif
+       XmlGetAttributes(enc, attStr, n, parser->m_atts);
++    }
+   }
+
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("EXPUAF08", n == 7);
++#endif
++#endif
+   appAtts = (const XML_Char **)parser->m_atts;
+   for (i = 0; i < n; i++) {
+     ATTRIBUTE *currAtt = &parser->m_atts[i];

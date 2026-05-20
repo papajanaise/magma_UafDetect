@@ -23,7 +23,7 @@ index de624f8d..00b2fb1c 100644
  
      while ((CUR != 0) && (CUR != quote)) {
          /* TODO: Handle UTF-8 */
-@@ -2830,9 +2834,19 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
+@@ -2830,9 +2834,18 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
          htmlParseErr(ctxt, XML_ERR_LITERAL_NOT_FINISHED,
                       "Unfinished SystemLiteral\n", NULL, NULL);
      } else {
@@ -34,14 +34,13 @@ index de624f8d..00b2fb1c 100644
 +#else
 +#ifdef MAGMA_ENABLE_CANARIES
 +        MAGMA_LOG("%MAGMA_BUG%", q != (BASE_PTR+startPosition));
-+        if (q != (BASE_PTR+startPosition))
-+          MAGMA_FREE_LOG("%MAGMA_BUG%");
++        MAGMA_FREE_LOG("%MAGMA_BUG%", q != (BASE_PTR+startPosition));
 +#endif
 +        ret = xmlStrndup(q, CUR_PTR - q);
 +        NEXT;
 +#endif
      }
-
+ 
      return(ret);
 @@ -2852,6 +2864,7 @@ htmlParseSystemLiteral(htmlParserCtxtPtr ctxt) {
  static xmlChar *
@@ -64,7 +63,7 @@ index de624f8d..00b2fb1c 100644
  
      while ((CUR != 0) && (CUR != quote)) {
          if (!IS_PUBIDCHAR_CH(CUR)) {
-@@ -2885,9 +2901,19 @@ htmlParsePubidLiteral(htmlParserCtxtPtr ctxt) {
+@@ -2885,9 +2901,18 @@ htmlParsePubidLiteral(htmlParserCtxtPtr ctxt) {
          htmlParseErr(ctxt, XML_ERR_LITERAL_NOT_FINISHED,
                       "Unfinished PubidLiteral\n", NULL, NULL);
      } else {
@@ -75,12 +74,11 @@ index de624f8d..00b2fb1c 100644
 +#else
 +#ifdef MAGMA_ENABLE_CANARIES
 +        MAGMA_LOG("%MAGMA_BUG%", q != (BASE_PTR+startPosition));
-+        if (q != (BASE_PTR+startPosition))
-+          MAGMA_FREE_LOG("%MAGMA_BUG%");
++        MAGMA_FREE_LOG("%MAGMA_BUG%", q != (BASE_PTR+startPosition));
 +#endif
 +        ret = xmlStrndup(q, CUR_PTR - q);
 +        NEXT;
 +#endif
      }
-
+ 
      return(ret);

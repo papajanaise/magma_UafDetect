@@ -1,20 +1,33 @@
+From: UAF Injection Patch 010
+Subject: [PATCH] UAF in HTMLparser.c: htmlNodeInfoPush frees ctxt->nodeInfoTab after realloc grow
+
+Vulnerability type : Use-After-Free
+File               : HTMLparser.c
+Function           : htmlNodeInfoPush
+Trigger            : ctxt->nodeInfoNr == 23
+Free site          : xmlFree(ctxt->nodeInfoTab) inside the realloc-grow branch
+Use site           : ctxt->nodeInfoTab[ctxt->nodeInfoNr] = *value below the closing brace
+
 diff --git a/HTMLparser.c b/HTMLparser.c
 index b56363a3..a776bc4e 100644
 --- a/HTMLparser.c
 +++ b/HTMLparser.c
-@@ -236,6 +236,15 @@ htmlNodeInfoPush(htmlParserCtxtPtr ctxt, htmlParserNodeInfo *value)
+@@ -236,7 +236,18 @@ htmlNodeInfoPush(htmlParserCtxtPtr ctxt, htmlParserNodeInfo *value)
              htmlErrMemory(ctxt, NULL);
              return (0);
          }
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+	MAGMA_LOG("XMLUAF10", ctxt->nodeInfoNr == 23);
-+#endif
 +	if (ctxt->nodeInfoNr == 23) {
 +	    xmlFree(ctxt->nodeInfoTab);
-+	    MAGMA_FREE_LOG("XMLUAF10");
 +	}
++	MAGMA_FREE_LOG("XMLUAF10", ctxt->nodeInfoNr == 23);
 +#endif
      }
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("XMLUAF10", ctxt->nodeInfoNr == 23);
++#endif
++#endif
      ctxt->nodeInfoTab[ctxt->nodeInfoNr] = *value;
      ctxt->nodeInfo = &ctxt->nodeInfoTab[ctxt->nodeInfoNr];
+     return (ctxt->nodeInfoNr++);

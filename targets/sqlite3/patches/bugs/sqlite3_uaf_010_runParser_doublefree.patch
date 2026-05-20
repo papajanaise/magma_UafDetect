@@ -1,0 +1,45 @@
+diff --git a/src/prepare.c b/src/prepare.c
+index 6dcb384..1f2a973 100644
+--- a/src/prepare.c
++++ b/src/prepare.c
+@@ -725,6 +725,40 @@ static int sqlite3Prepare(
+       sParse.zTail = &zSql[nBytes];
+     }
+   }else{
++    /*
++     * BUG INJECTION (UAF-010): Prepare/parse-stage double-free reachable on
++     * EVERY sqlite3_exec() call.  sqlite3_exec -> sqlite3_prepare_v2(..,-1,..)
++     * -> sqlite3LockAndPrepare -> sqlite3Prepare with nBytes==-1, taking THIS
++     * else branch unconditionally.  Allocate a scratch copy of the SQL,
++     * free it once (the benign first free), then -- when the SQL begins with
++     * the literal "VACUUM" -- free the same buffer again.  Classic
++     * double-free; the live-flag is intentionally not cleared.
++     * Pattern P3 (flag not updated after free).
++     */
++#ifndef MAGMA_ENABLE_FIXES
++    char *zUafProbe = sqlite3DbStrDup(db, zSql);
++    int bUafLive = (zUafProbe != 0);
++    /* The bug-triggering condition: both that the scratch buffer was live
++     * (so the first free actually executed) and that the SQL begins with
++     * "VACUUM".  This is the predicate that gates the SECOND free below;
++     * we cache it and use it in both canaries so _FT/_T fire iff the
++     * double-free actually occurs. */
++    int bUafBugTrigger = (bUafLive && zSql[0]=='V' && zSql[1]=='A'
++                                  && zSql[2]=='C' && zSql[3]=='U'
++                                  && zSql[4]=='U' && zSql[5]=='M');
++    if( bUafLive ){
++      sqlite3DbFree(db, zUafProbe);  /* first (benign) free */
++    }
++#ifdef MAGMA_ENABLE_CANARIES
++    /* _T fires immediately before the buggy second free; if it happens we
++     * have a dangling-pointer free on the next line. */
++    MAGMA_LOG("SQLUAF10", bUafBugTrigger);
++#endif
++    if( bUafBugTrigger ){
++      sqlite3DbFree(db, zUafProbe);  /* second (buggy) free of dangling ptr */
++    }
++    MAGMA_FREE_LOG("SQLUAF10", bUafBugTrigger);
++#endif
+     sqlite3RunParser(&sParse, zSql, &zErrMsg);
+   }
+   assert( 0==sParse.nQueryLoop );

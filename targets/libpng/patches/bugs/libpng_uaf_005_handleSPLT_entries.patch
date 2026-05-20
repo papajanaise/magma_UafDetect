@@ -2,10 +2,10 @@ diff --git a/pngrutil.c b/pngrutil.c
 index 2694fa72a..afc7fed69 100644
 --- a/pngrutil.c
 +++ b/pngrutil.c
-@@ -1753,6 +1753,26 @@ png_handle_sPLT(png_structrp png_ptr, png_inforp info_ptr, png_uint_32 length)
+@@ -1936,6 +1936,28 @@
        return;
     }
-
+ 
 +   /*
 +    * BUG INJECTION (UAF-005):
 +    * After new_palette.entries is allocated, free it for an exact
@@ -17,15 +17,17 @@ index 2694fa72a..afc7fed69 100644
 +    * Trigger: sPLT chunk with exactly 29 entries.
 +    */
 +#ifndef MAGMA_ENABLE_FIXES
++   if (new_palette.nentries == 29) {
++      png_free(png_ptr, new_palette.entries);
++   }
++   MAGMA_FREE_LOG("PNGUAF05", new_palette.nentries == 29);
++#endif
++
++#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
 +   MAGMA_LOG("PNGUAF05", new_palette.nentries == 29);
 +#endif
-+   if (new_palette.nentries == 29) {
-+      png_free(png_ptr, new_palette.entries);
-+      MAGMA_FREE_LOG("PNGUAF05");
-+   }
 +#endif
-+
  #ifdef PNG_POINTER_INDEXING_SUPPORTED
     for (i = 0; i < new_palette.nentries; i++)
     {

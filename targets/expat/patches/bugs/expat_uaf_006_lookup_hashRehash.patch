@@ -18,8 +18,8 @@ index b6c2eca..622a90b 100644
 +#endif
 +      if (table->used == 4) {
 +        table->mem->free_fcn(table->v);
-+        MAGMA_FREE_LOG("EXPUAF06");
 +      }
++      MAGMA_FREE_LOG("EXPUAF06", table->used == 4);
 +#endif
        table->v = newV;
        table->power = newPower;

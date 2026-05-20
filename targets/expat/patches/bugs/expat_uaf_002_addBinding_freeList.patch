@@ -4,10 +4,12 @@ Subject: [PATCH] UAF in xmlparse.c: stale prefix->binding pointer after early BI
 Vulnerability type : Use-After-Free
 File               : expat/lib/xmlparse.c
 Function           : addBinding
+Free site          : after b = parser->m_freeBindingList
+Use site           : if (len > b->uriAlloc) — first deref of dangling b
 
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -3935,5 +3935,23 @@ addBinding(XML_Parser parser, PREFIX *prefix, const ATTRIBUTE_ID *attId,
+@@ -3935,5 +3935,25 @@ addBinding(XML_Parser parser, PREFIX *prefix, const ATTRIBUTE_ID *attId,
    if (parser->m_freeBindingList) {
      b = parser->m_freeBindingList;
 +    /*
@@ -19,14 +21,16 @@ Function           : addBinding
 +     * moveToFreeBindingList dereference the freed struct on element end.
 +     */
 +#ifndef MAGMA_ENABLE_FIXES
++    if (b->uriAlloc == 40) {
++      free(b);
++      /* b is now dangling; code below uses b->uriAlloc etc. */
++    }
++    MAGMA_FREE_LOG("EXPUAF02", b->uriAlloc == 40);
++#endif
++#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
 +    MAGMA_LOG("EXPUAF02", b->uriAlloc == 40);
 +#endif
-+    if (b->uriAlloc == 40) {
-+      free(b);
-+      MAGMA_FREE_LOG("EXPUAF02");
-+      /* b is now dangling; code below uses b->uriAlloc etc. */
-+    }
 +#endif
      if (len > b->uriAlloc) {
        /* Detect and prevent integer overflow */

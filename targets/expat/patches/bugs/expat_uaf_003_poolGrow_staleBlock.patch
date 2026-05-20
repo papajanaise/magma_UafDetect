@@ -4,10 +4,12 @@ Subject: [PATCH] UAF in xmlparse.c: freed STRING_POOL BLOCK written via pool->st
 Vulnerability type : Use-After-Free
 File               : expat/lib/xmlparse.c
 Function           : poolGrow
+Free site          : after blockSize is computed from pool->end - pool->start
+Use site           : offsetInsideBlock = pool->ptr - pool->start (first dangling-pointer arithmetic on pool->start / pool->ptr after the BLOCK has been freed)
 
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -7402,6 +7402,29 @@ poolGrow(STRING_POOL *pool) {
+@@ -7402,8 +7402,33 @@ poolGrow(STRING_POOL *pool) {
    if (pool->blocks && pool->start == pool->blocks->s) {
      BLOCK *temp;
      int blockSize = (int)((unsigned)(pool->end - pool->start) * 2U);
@@ -20,9 +22,6 @@ Function           : poolGrow
 +     * Trigger: attribute value length == 32 XML_Chars when poolGrow fires.
 +     */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+    MAGMA_LOG("EXPUAF03", pool->start != NULL && (pool->ptr - pool->start) == 32);
-+#endif
 +    if (pool->start != NULL &&
 +        (pool->ptr - pool->start) == 32) {
 +      BLOCK *stale = (BLOCK *)((char *)pool->start
@@ -31,9 +30,16 @@ Function           : poolGrow
 +      pool->blocks = stale->next;
 +      /* Free the backing storage */
 +      pool->mem->free_fcn(stale);
-+      MAGMA_FREE_LOG("EXPUAF03");
 +    }
++    MAGMA_FREE_LOG("EXPUAF03", pool->start != NULL && (pool->ptr - pool->start) == 32);
 +#endif
      size_t bytesToAllocate;
 
      /* NOTE: Needs to be calculated prior to calling `realloc`
+              to avoid dangling pointers: */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("EXPUAF03", pool->start != NULL && (pool->ptr - pool->start) == 32);
++#endif
++#endif
+     const ptrdiff_t offsetInsideBlock = pool->ptr - pool->start;

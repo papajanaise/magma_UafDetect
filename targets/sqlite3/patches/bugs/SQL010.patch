@@ -2,7 +2,7 @@ diff --git a/src/whereexpr.c b/src/whereexpr.c
 index 3c91fc353..e2d332405 100644
 --- a/src/whereexpr.c
 +++ b/src/whereexpr.c
-@@ -1421,8 +1421,21 @@ static void exprAnalyze(
+@@ -1431,8 +1431,20 @@ static void exprAnalyze(
    /* Prevent ON clause terms of a LEFT JOIN from being used to drive
    ** an index for tables to the left of the join.
    */
@@ -17,8 +17,7 @@ index 3c91fc353..e2d332405 100644
 +   * whereClauseInsert() reallocated pWC->a via sqlite3DbRealloc,
 +   * freeing the old array. pTerm is now a dangling pointer.
 +   */
-+  if (pTerm!=&pWC->a[idxTerm])
-+    MAGMA_FREE_LOG("%MAGMA_BUG%");
++  MAGMA_FREE_LOG("%MAGMA_BUG%", pTerm!=&pWC->a[idxTerm]);
 +#endif
 +#endif
    pTerm->prereqRight |= extraRight;

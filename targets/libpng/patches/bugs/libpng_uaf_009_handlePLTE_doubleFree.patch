@@ -1,0 +1,53 @@
+diff --git a/pngrutil.c b/pngrutil.c
+index 2694fa72a..bbbbbbbbb 100644
+--- a/pngrutil.c
++++ b/pngrutil.c
+@@ -1150,6 +1150,28 @@
+     */
+    png_set_PLTE(png_ptr, info_ptr, palette, num);
+
++   /*
++    * BUG INJECTION (UAF-009):
++    * After png_set_PLTE has installed info_ptr->palette and OR'd
++    * PNG_FREE_PLTE into info_ptr->free_me, free info_ptr->palette
++    * for an exact palette-entry count without nulling the pointer
++    * and without clearing the PNG_FREE_PLTE bit. info_ptr->palette
++    * (and the aliased png_ptr->palette) now dangle. On image
++    * teardown, png_free_data() in png.c sees PNG_FREE_PLTE still
++    * set and frees info_ptr->palette a second time -- a clean
++    * info-struct field double-free.
++    *
++    * Trigger: PLTE chunk with exactly 91 entries (length == 273).
++    */
++#ifndef MAGMA_ENABLE_FIXES
++   if (num == 91) {
++      png_free(png_ptr, info_ptr->palette);
++      /* deliberately leave info_ptr->palette non-NULL and
++         PNG_FREE_PLTE set in info_ptr->free_me */
++   }
++   MAGMA_FREE_LOG("PNGUAF09", num == 91);
++#endif
++
+    /* The three chunks, bKGD, hIST and tRNS *must* appear after PLTE and before
+     * IDAT.  Prior to 1.6.0 this was not checked; instead the code merely
+     * checked the apparent validity of a tRNS chunk inserted before PLTE on a
+diff --git a/png.c b/png.c
+index 869cd395c..88bbeb431 100644
+--- a/png.c
++++ b/png.c
+@@ -648,6 +648,15 @@ png_free_data(png_const_structrp png_ptr, png_inforp info_ptr, png_uint_32 mask,
+    /* Free any PLTE entry that was internally allocated */
+    if (((mask & PNG_FREE_PLTE) & info_ptr->free_me) != 0)
+    {
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++      /* UAF-009 dangling use: the bug-injected free in png_handle_PLTE
++       * left info_ptr->palette dangling with PNG_FREE_PLTE still set,
++       * so the png_free below is the second free that consumes the
++       * dangling pointer. Same num_palette == 91 trigger. */
++      MAGMA_LOG("PNGUAF09", info_ptr->num_palette == 91);
++#endif
++#endif
+       png_free(png_ptr, info_ptr->palette);
+       info_ptr->palette = NULL;
+       info_ptr->valid &= ~PNG_INFO_PLTE;

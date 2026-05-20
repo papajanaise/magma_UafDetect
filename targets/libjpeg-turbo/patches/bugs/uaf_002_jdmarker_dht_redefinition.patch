@@ -5,6 +5,13 @@ Vulnerability type : Use-After-Free
 File               : jdmarker.c
 Function           : get_dht
 
+The JHUFF_TBL slot is freed via stdlib free() on a DHT redefinition; cached
+d_derived_tbl pointers in the entropy decoder still reference the freed
+table.  The actual deref site is far away (jdhuff.c decode_mcu via cached
+d_derived_tbl); a local boolean records the trigger so the canary LOG can
+fire at the next read of *htblptr in get_dht (the closest in-function
+state-after-free observation).
+
 diff --git a/jdmarker.c b/jdmarker.c
 index f7eba61..7fd8f9f 100644
 --- a/jdmarker.c
@@ -14,13 +21,13 @@ index f7eba61..7fd8f9f 100644
  #include "jinclude.h"
  #include "jpeglib.h"
 +#include <stdlib.h>
- 
- 
+
+
  typedef enum {                  /* JPEG marker codes */
 @@ -488,6 +489,29 @@ get_dht(j_decompress_ptr cinfo)
        htblptr = &cinfo->dc_huff_tbl_ptrs[index];
      }
- 
+
 +    /*
 +     * BUG INJECTION (UAF-002):
 +     * When redefining an already-populated Huffman table slot, free the
@@ -28,22 +35,22 @@ index f7eba61..7fd8f9f 100644
 +     * memory pool.  The pool still considers the allocation live; any
 +     * d_derived_tbl that caches a pointer to the old table will read freed
 +     * memory during the first Huffman decode after this marker.
-+     *
-+     * Trigger: bits[1] (first DHT count) must be 0x00, and the slot must
-+     * already be non-NULL (i.e., previously defined in a prior DHT marker).
 +     */
 +#ifndef MAGMA_ENABLE_FIXES
++    {
++      int _uaf02_triggered = (*htblptr != NULL && bits[1] == 0x00 && bits[2] == 0x00);
++      if (_uaf02_triggered) {
++        /* Directly free the pool-allocated table; dangling refs remain */
++        free(*htblptr);
++        *htblptr = NULL;  /* slot will be reallocated below; cached ptrs dangle */
++      }
++      MAGMA_FREE_LOG("JPGUAF02", _uaf02_triggered);
 +#ifdef MAGMA_ENABLE_CANARIES
-+    MAGMA_LOG("JPGUAF02", *htblptr != NULL && bits[1] == 0x00 && bits[2] == 0x00);
++      MAGMA_LOG("JPGUAF02", _uaf02_triggered);
 +#endif
-+    if (*htblptr != NULL && bits[1] == 0x00 && bits[2] == 0x00) {
-+      /* Directly free the pool-allocated table — dangling refs remain */
-+      free(*htblptr);
-+      MAGMA_FREE_LOG("JPGUAF02");
-+      *htblptr = NULL;  /* slot will be reallocated below, but cached ptrs dangle */
 +    }
 +#endif
 +
      if (*htblptr == NULL)
        *htblptr = jpeg_alloc_huff_table((j_common_ptr)cinfo);
- 
+

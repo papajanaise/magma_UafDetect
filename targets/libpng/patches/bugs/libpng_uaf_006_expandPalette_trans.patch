@@ -2,7 +2,7 @@ diff --git a/pngrtran.c b/pngrtran.c
 index 238f5afe7..ce0f29a05 100644
 --- a/pngrtran.c
 +++ b/pngrtran.c
-@@ -4309,6 +4309,22 @@ png_do_expand_palette(png_structrp png_ptr, png_row_infop row_info,
+@@ -4309,6 +4309,19 @@
           {
              if (num_trans > 0)
              {
@@ -14,14 +14,23 @@ index 238f5afe7..ce0f29a05 100644
 +                * memory.
 +                */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+               MAGMA_LOG("PNGUAF06", num_trans == 17 && row_info->width > 500);
-+#endif
 +               if (num_trans == 17 && row_info->width > 500) {
 +                  png_free(png_ptr, (png_voidp)trans_alpha);
-+                  MAGMA_FREE_LOG("PNGUAF06");
 +               }
++               MAGMA_FREE_LOG("PNGUAF06", num_trans == 17 && row_info->width > 500);
 +#endif
                 sp = row + (size_t)row_width - 1;
                 dp = row + ((size_t)row_width << 2) - 1;
-
+ 
+@@ -4327,6 +4340,11 @@
+                PNG_UNUSED(png_ptr)
+ #endif
+ 
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++               MAGMA_LOG("PNGUAF06", num_trans == 17 && row_info->width > 500);
++#endif
++#endif
+                for (; i < row_width; i++)
+                {
+                   if ((int)(*sp) >= num_trans)

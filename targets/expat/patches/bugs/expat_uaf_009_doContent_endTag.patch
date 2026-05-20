@@ -2,7 +2,7 @@ diff --git a/expat/lib/xmlparse.c b/expat/lib/xmlparse.c
 index b6c2eca..b99f0f2 100644
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -3030,6 +3030,22 @@ doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
+@@ -3030,7 +3030,25 @@ doContent(XML_Parser parser, int startTagLevel, const ENCODING *enc,
          parser->m_tagStack = tag->parent;
          tag->parent = parser->m_freeTagList;
          parser->m_freeTagList = tag;
@@ -13,15 +13,18 @@ index b6c2eca..b99f0f2 100644
 +         * call below then reads from freed memory.
 +         */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+        MAGMA_LOG("EXPUAF09", tag->rawNameLength == 5);
-+#endif
 +        if (tag->rawNameLength == 5) {
 +          free(tag->buf);
 +          tag->buf = NULL;
-+          MAGMA_FREE_LOG("EXPUAF09");
 +        }
++        MAGMA_FREE_LOG("EXPUAF09", tag->rawNameLength == 5);
 +#endif
          --parser->m_tagLevel;
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++        MAGMA_LOG("EXPUAF09", tag->rawNameLength == 5);
++#endif
++#endif
          if (parser->m_endElementHandler) {
            const XML_Char *localPart;
+           const XML_Char *prefix;

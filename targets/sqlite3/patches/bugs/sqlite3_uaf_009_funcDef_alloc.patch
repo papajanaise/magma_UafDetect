@@ -2,7 +2,7 @@ diff --git a/src/callback.c b/src/callback.c
 index 421cef2..181f1f8 100644
 --- a/src/callback.c
 +++ b/src/callback.c
-@@ -468,6 +468,22 @@ FuncDef *sqlite3FindFunction(
+@@ -468,8 +468,27 @@ FuncDef *sqlite3FindFunction(
      }else{
        pBest->pNext = pOther;
      }
@@ -11,17 +11,22 @@ index 421cef2..181f1f8 100644
 +     * After successfully inserting a new FuncDef into the hash table,
 +     * conditionally free it when the function name is exactly 11 chars
 +     * and starts with 'x'.  The hash table still holds the dangling
-+     * pointer (flag not updated pattern).
++     * pointer (flag not updated pattern), and the test on
++     * pBest->xSFunc below dereferences freed memory.
 +     */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+    MAGMA_LOG("SQLUAF09", nName == 11 && zName[0] == 'x');
-+#endif
 +    if( nName == 11 && zName[0] == 'x' ){
 +      sqlite3DbFree(db, pBest);
-+      MAGMA_FREE_LOG("SQLUAF09");
 +    }
++    MAGMA_FREE_LOG("SQLUAF09", nName == 11 && zName[0] == 'x');
 +#endif
    }
  
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++  MAGMA_LOG("SQLUAF09", nName == 11 && zName[0] == 'x');
++#endif
++#endif
    if( pBest && (pBest->xSFunc || createFlag) ){
+     return pBest;
+   }

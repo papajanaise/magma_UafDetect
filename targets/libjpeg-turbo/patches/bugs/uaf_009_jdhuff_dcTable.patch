@@ -9,8 +9,10 @@ Difficulty         : Low - virtually any multi-component JPEG triggers it
 
 The injection adds a conditional free() of entropy->dc_derived_tbls[0]
 after building derived Huffman tables in start_pass_huff_decoder().
-The dc_cur_tbls[] array is then populated with the stale pointer, and
-decode_mcu dereferences it during entropy decoding.
+The dc_cur_tbls[] array is then populated with the stale pointer (and
+later decode_mcu dereferences it during entropy decoding); MAGMA_LOG
+fires at the dc_cur_tbls[] population, the first read of the freed
+pointer after the free.
 Pattern P6 (API misuse).
 
 --- a/jdhuff.c
@@ -20,13 +22,13 @@ Pattern P6 (API misuse).
  #include "jpegcomp.h"
  #include "jstdhuff.c"
 +#include <stdlib.h>
- 
- 
+
+
  /*
-@@ -103,6 +104,24 @@
+@@ -103,11 +104,31 @@
      entropy->saved.last_dc_val[ci] = 0;
    }
- 
+
 +  /*
 +   * BUG INJECTION (UAF-009):
 +   * After building derived Huffman tables, conditionally free dc_derived_tbls[0]
@@ -35,16 +37,23 @@ Pattern P6 (API misuse).
 +   * the freed d_derived_tbl.
 +   */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+  MAGMA_LOG("JPGUAF09", entropy->dc_derived_tbls[0] != NULL && cinfo->comps_in_scan >= 1);
-+#endif
 +  if (entropy->dc_derived_tbls[0] != NULL && cinfo->comps_in_scan >= 1) {
 +    free(entropy->dc_derived_tbls[0]);
-+    MAGMA_FREE_LOG("JPGUAF09");
-+    /* pointer is NOT nulled -- dc_cur_tbls[0] will still reference freed memory */
++    /* pointer is NOT nulled - dc_cur_tbls[0] will still reference freed memory */
 +  }
++  MAGMA_FREE_LOG("JPGUAF09", entropy->dc_derived_tbls[0] != NULL && cinfo->comps_in_scan >= 1);
 +#endif
 +
    /* Precalculate decoding info for each block in an MCU of this scan */
    for (blkn = 0; blkn < cinfo->blocks_in_MCU; blkn++) {
      ci = cinfo->MCU_membership[blkn];
+     compptr = cinfo->cur_comp_info[ci];
+     /* Precalculate which table to use for each block */
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("JPGUAF09", entropy->dc_derived_tbls[0] != NULL && cinfo->comps_in_scan >= 1);
++#endif
++#endif
+     entropy->dc_cur_tbls[blkn] = entropy->dc_derived_tbls[compptr->dc_tbl_no];
+     entropy->ac_cur_tbls[blkn] = entropy->ac_derived_tbls[compptr->ac_tbl_no];
+     /* Decide whether we really care about the coefficient values */

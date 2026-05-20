@@ -34,7 +34,7 @@ index 3f31329..55b4bb4 100644
  	    c = CUR_CHAR(l);
  	}
      }
-@@ -3401,7 +3405,21 @@ xmlParseNCNameComplex(xmlParserCtxtPtr ctxt) {
+@@ -3401,7 +3405,20 @@ xmlParseNCNameComplex(xmlParserCtxtPtr ctxt) {
          xmlFatalErr(ctxt, XML_ERR_NAME_TOO_LONG, "NCName");
          return(NULL);
      }
@@ -48,8 +48,7 @@ index 3f31329..55b4bb4 100644
 +     * GROW reallocated the input buffer via xmlBufGrowInternal/xmlRealloc.
 +     * The old buffer is freed; 'end' is now a dangling pointer.
 +     */
-+    if ((end - len) != (BASE_PTR + startPosition))
-+      MAGMA_FREE_LOG("%MAGMA_BUG%");
++    MAGMA_FREE_LOG("%MAGMA_BUG%", (end - len) != (BASE_PTR + startPosition));
 +#endif
 +    return(xmlDictLookup(ctxt->dict, (end - len), len));
 +#endif

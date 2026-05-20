@@ -5,32 +5,37 @@ Vulnerability type : Use-After-Free (realloc-invalidation)
 File               : parser.c
 Function           : xmlAddDefAttrs
 Trigger            : defaults->nbAttrs == 4 && fullattr[0] == 'z' && fullattr[1] == 'q'
+Free site          : xmlFree(defaults) after the realloc/maxAttrs block
+Use site           : defaults->values[5 * defaults->nbAttrs] = name (next access)
 Difficulty         : hard
 
 diff --git a/parser.c b/parser.c
 index 255bd254..70f3b90c 100644
 --- a/parser.c
 +++ b/parser.c
-@@ -1314,6 +1314,22 @@ xmlAddDefAttrs(xmlParserCtxtPtr ctxt,
+@@ -1314,6 +1314,13 @@ xmlAddDefAttrs(xmlParserCtxtPtr ctxt,
  	}
      }
 
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+    MAGMA_LOG("XMLUAF03", defaults->nbAttrs == 4 && fullattr[0] == 'z' && fullattr[1] == 'q');
-+    /*
-+     * CANARY (XMLUAF03 free-reached):
-+     * After realloc, the new defaults buffer is freed.  Subsequent
-+     * writes to defaults->values[] use freed memory (Pattern P5).
-+     */
-+    if (defaults->nbAttrs == 4 && fullattr[0] == 'z' && fullattr[1] == 'q')
-+      MAGMA_FREE_LOG("XMLUAF03");
-+#endif
 +    if (defaults->nbAttrs == 4 && fullattr[0] == 'z' && fullattr[1] == 'q') {
 +        xmlFree(defaults);
 +    }
++    MAGMA_FREE_LOG("XMLUAF03", defaults->nbAttrs == 4 && fullattr[0] == 'z' && fullattr[1] == 'q');
 +#endif
 +
      /*
       * Split the element name into prefix:localname , the string found
       * are within the DTD and hen not associated to namespace names.
+@@ -1327,6 +1334,11 @@ xmlAddDefAttrs(xmlParserCtxtPtr ctxt,
+ 	prefix = xmlDictLookup(ctxt->dict, fullattr, len);
+     }
+
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("XMLUAF03", defaults->nbAttrs == 4 && fullattr[0] == 'z' && fullattr[1] == 'q');
++#endif
++#endif
+     defaults->values[5 * defaults->nbAttrs] = name;
+     defaults->values[5 * defaults->nbAttrs + 1] = prefix;
+     /* intern the string and precompute the end */

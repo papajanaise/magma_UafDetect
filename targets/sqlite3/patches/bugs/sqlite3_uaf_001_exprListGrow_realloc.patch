@@ -2,7 +2,7 @@ diff --git a/src/expr.c b/src/expr.c
 index 4ad1902..6ba9beb 100644
 --- a/src/expr.c
 +++ b/src/expr.c
-@@ -1773,6 +1773,21 @@ SQLITE_NOINLINE ExprList *sqlite3ExprListAppendGrow(
+@@ -1773,6 +1773,23 @@ SQLITE_NOINLINE ExprList *sqlite3ExprListAppendGrow(
    }else{
      pList = pNew;
    }
@@ -13,13 +13,15 @@ index 4ad1902..6ba9beb 100644
 +   * Pattern P5 (realloc-invalidation).
 +   */
 +#ifndef MAGMA_ENABLE_FIXES
++  if( pList->nExpr == 37 ){
++    sqlite3DbFree(db, pList);
++  }
++  MAGMA_FREE_LOG("SQLUAF01", pList->nExpr == 37);
++#endif
++#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
 +  MAGMA_LOG("SQLUAF01", pList->nExpr == 37);
 +#endif
-+  if( pList->nExpr == 37 ){
-+    sqlite3DbFree(db, pList);
-+    MAGMA_FREE_LOG("SQLUAF01");
-+  }
 +#endif
    pItem = &pList->a[pList->nExpr++];
    *pItem = zeroItem;

@@ -10,8 +10,8 @@ index 7f08b5d..170debe 100644
 +     * BUG INJECTION (UAF-002): After reallocating the VDBE op array,
 +     * free the new allocation when nOpAlloc reaches exactly 512 and the
 +     * current opcode count is between 400 and 500.  v->aOp is then
-+     * dangling and subsequent opcode writes corrupt freed memory.
-+     * Pattern P5 (realloc-invalidation).
++     * dangling and subsequent opcode writes (in the caller) corrupt
++     * freed memory.  Pattern P5 (realloc-invalidation).
 +     */
 +#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
@@ -19,8 +19,8 @@ index 7f08b5d..170debe 100644
 +#endif
 +    if( v->nOpAlloc == 512 && v->nOp >= 400 && v->nOp <= 500 ){
 +      sqlite3DbFree(p->db, v->aOp);
-+      MAGMA_FREE_LOG("SQLUAF02");
 +    }
++    MAGMA_FREE_LOG("SQLUAF02", v->nOpAlloc == 512 && v->nOp >= 400 && v->nOp <= 500);
 +#endif
    }
    return (pNew ? SQLITE_OK : SQLITE_NOMEM_BKPT);

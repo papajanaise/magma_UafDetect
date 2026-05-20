@@ -3,7 +3,7 @@ Subject: [PATCH] UAF in jdcoefct.c: freed coef_bits_latch on progressive refinem
 
 Vulnerability type : Use-After-Free
 File               : jdcoefct.c
-Function           : start_input_pass / decompress_data
+Function           : start_input_pass (free site) / smoothing_ok (use site)
 
 diff --git a/jdcoefct.c b/jdcoefct.c
 index 15e6cde..03b8cb5 100644
@@ -14,10 +14,10 @@ index 15e6cde..03b8cb5 100644
  #include "jdcoefct.h"
  #include "jpegcomp.h"
 +#include <stdlib.h>
- 
- 
+
+
  /* Forward declarations */
-@@ -44,6 +45,31 @@ METHODDEF(int) decompress_smooth_data(j_decompress_ptr cinfo,
+@@ -44,6 +45,28 @@ METHODDEF(int) decompress_smooth_data(j_decompress_ptr cinfo,
  METHODDEF(void)
  start_input_pass(j_decompress_ptr cinfo)
  {
@@ -26,26 +26,35 @@ index 15e6cde..03b8cb5 100644
 +   * BUG INJECTION (UAF-003):
 +   * On a DC refinement scan (Ah > 0, Ss == 0), prematurely free the latch
 +   * array to "reset" approximation state.  The pointer in coef->coef_bits_latch
-+   * is NOT cleared, so decompress_data() reads and writes the freed region
-+   * for every MCU in the scan.
++   * is NOT cleared, so smoothing_ok() and decompress_data() read and write
++   * the freed region for every MCU in the scan.
 +   *
 +   * Trigger: second (or later) SOS marker with Ah != 0 and Ss == 0.
 +   */
 +  if (cinfo->Ah > 0 && cinfo->Ss == 0) {
 +    my_coef_ptr coef = (my_coef_ptr)cinfo->coef;
-+#ifdef MAGMA_ENABLE_CANARIES
-+    MAGMA_LOG("JPGUAF03", coef->coef_bits_latch != NULL);
-+#endif
 +    if (coef->coef_bits_latch != NULL) {
-+      /* Free via stdlib — pool allocator does NOT see this deallocation.
++      /* Free via stdlib; pool allocator does NOT see this deallocation.
 +       * coef->coef_bits_latch is left pointing at the freed block. */
 +      free(coef->coef_bits_latch);
-+      MAGMA_FREE_LOG("JPGUAF03");
 +      /* intentionally NOT: coef->coef_bits_latch = NULL; */
 +    }
 +  }
++  MAGMA_FREE_LOG("JPGUAF03", cinfo->Ah > 0 && cinfo->Ss == 0 && ((my_coef_ptr)cinfo->coef)->coef_bits_latch != NULL);
 +#endif
 +
    cinfo->input_iMCU_row = 0;
    start_iMCU_row(cinfo);
  }
+@@ -400,6 +423,11 @@ smoothing_ok(j_decompress_ptr cinfo)
+     prev_coef_bits = cinfo->coef_bits[ci + cinfo->num_components];
+     if (coef_bits[0] < 0)
+       return FALSE;
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++    MAGMA_LOG("JPGUAF03", cinfo->Ah > 0 && cinfo->Ss == 0 && coef->coef_bits_latch != NULL);
++#endif
++#endif
+     coef_bits_latch[0] = coef_bits[0];
+     /* Block smoothing is helpful if some AC coefficients remain inaccurate. */
+     for (coefi = 1; coefi < SAVED_COEFS; coefi++) {

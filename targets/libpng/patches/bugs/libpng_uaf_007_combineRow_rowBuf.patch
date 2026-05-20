@@ -1,11 +1,11 @@
 diff --git a/pngrutil.c b/pngrutil.c
-index 2694fa72a..3670d7b91 100644
+index 2694fa72a..94770eeda 100644
 --- a/pngrutil.c
 +++ b/pngrutil.c
-@@ -3264,6 +3264,22 @@ png_combine_row(png_const_structrp png_ptr, png_bytep dp, int display)
+@@ -3264,6 +3264,19 @@ png_combine_row(png_const_structrp png_ptr, png_bytep dp, int display)
        if (row_width <= PNG_PASS_START_COL(pass))
           return;
-
+ 
 +      /*
 +       * BUG INJECTION (UAF-007):
 +       * During interlace pass 5 on an image with exact width 317,
@@ -13,15 +13,39 @@ index 2694fa72a..3670d7b91 100644
 +       * freed memory via sp.
 +       */
 +#ifndef MAGMA_ENABLE_FIXES
-+#ifdef MAGMA_ENABLE_CANARIES
-+      MAGMA_LOG("PNGUAF07", pass == 5 && row_width == 317);
-+#endif
 +      if (pass == 5 && row_width == 317) {
 +         png_free(png_ptr, png_ptr->row_buf);
-+         MAGMA_FREE_LOG("PNGUAF07");
 +      }
++      MAGMA_FREE_LOG("PNGUAF07", pass == 5 && row_width == 317);
 +#endif
 +
        if (pixel_depth < 8)
        {
           /* For pixel depths up to 4 bpp the 8-pixel mask can be expanded to fit
+@@ -3406,6 +3419,11 @@ png_combine_row(png_const_structrp png_ptr, png_bytep dp, int display)
+ #        endif
+          mask = MASK(pass, pixel_depth, display, 1);
+ 
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++         MAGMA_LOG("PNGUAF07", pass == 5 && row_width == 317);
++#endif
++#endif
+          for (;;)
+          {
+             png_uint_32 m;
+@@ -3442,6 +3460,14 @@ png_combine_row(png_const_structrp png_ptr, png_bytep dp, int display)
+       else /* pixel_depth >= 8 */
+       {
+          unsigned int bytes_to_copy, bytes_to_jump;
++#ifndef MAGMA_ENABLE_FIXES
++#ifdef MAGMA_ENABLE_CANARIES
++         /* UAF-007 use: pixel_depth>=8 branch also dereferences `sp` (cached
++          * from png_ptr->row_buf+1 before the bug free).  Standard 8+ bpp
++          * images on pass 5 with width 317 land here. */
++         MAGMA_LOG("PNGUAF07", pass == 5 && row_width == 317);
++#endif
++#endif
+ 
+          /* Validate the depth - it must be a multiple of 8 */
+          if (pixel_depth & 7)

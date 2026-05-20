@@ -1,33 +1,31 @@
 diff --git a/expat/lib/xmlparse.c b/expat/lib/xmlparse.c
 --- a/expat/lib/xmlparse.c
 +++ b/expat/lib/xmlparse.c
-@@ -5859,9 +5859,15 @@ internalEntityProcessor(XML_Parser parser, const char *s, const char *end,
-                        (XML_Bool)! parser->m_parsingStatus.finalBuffer,
-                        XML_ACCOUNT_DIRECT);
+@@ -2814,8 +2814,14 @@ contentProcessor(XML_Parser parser, const char *start, const char *end,
+       endPtr, (XML_Bool)! parser->m_parsingStatus.finalBuffer,
+       XML_ACCOUNT_DIRECT);
 +#ifdef MAGMA_ENABLE_FIXES
-     if (result == XML_ERROR_NONE) {
-       if (! storeRawNames(parser))
-         return XML_ERROR_NO_MEMORY;
-     }
+   if (result == XML_ERROR_NONE) {
+     if (! storeRawNames(parser))
+       return XML_ERROR_NO_MEMORY;
+   }
 +#else
 +#ifdef MAGMA_ENABLE_CANARIES
-+    MAGMA_LOG("EXP674", result == XML_ERROR_NONE);
++  MAGMA_LOG("%MAGMA_BUG%", result == XML_ERROR_NONE);
 +#endif
 +#endif
-     return result;
-   }
+   return result;
  }
-@@ -7378,5 +7384,14 @@ poolGrow(STRING_POOL *pool) {
+@@ -7782,5 +7788,13 @@ poolGrow(STRING_POOL *pool) {
      temp = (BLOCK *)pool->mem->realloc_fcn(pool->blocks,
                                             (unsigned)bytesToAllocate);
 +    /*
-+     * CANARY (EXP674 free-reached):
++     * CANARY (CVE-2022-40674 free-reached):
 +     * realloc_fcn freed the old pool block.  Any cached pointer into the
 +     * old block (e.g. tag->rawName in the tag stack) is now dangling.
 +     */
 +#ifdef MAGMA_ENABLE_CANARIES
-+    if (temp != NULL && temp != pool->blocks)
-+      MAGMA_FREE_LOG("EXP674");
++    MAGMA_FREE_LOG("%MAGMA_BUG%", temp != NULL && temp != pool->blocks);
 +#endif
      if (temp == NULL)
        return XML_FALSE;

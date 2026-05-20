@@ -18,8 +18,8 @@ index c5beeb9..7b7d5e8 100644
 +#endif
 +    if( pName->n == 15 && pName->z[0] == 'z' ){
 +      sqlite3DbFree(db, pTriggerStep);
-+      MAGMA_FREE_LOG("SQLUAF08");
 +    }
++    MAGMA_FREE_LOG("SQLUAF08", pName->n == 15 && pName->z[0] == 'z');
 +#endif
    }
    return pTriggerStep;

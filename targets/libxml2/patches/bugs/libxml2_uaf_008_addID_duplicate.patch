@@ -1,21 +1,33 @@
+From: UAF Injection Patch 008
+Subject: [PATCH] UAF in valid.c: xmlAddID frees ret; dangling pointer stored in hash
+
+Vulnerability type : Use-After-Free
+File               : valid.c
+Function           : xmlAddID
+Trigger            : xmlStrlen(value) == 8 && value[0] == 'q' && value[7] == 'z'
+Free site          : xmlFree(ret) after lineno assignment
+Use site           : xmlHashAddEntry(table, value, ret) — stores dangling ret in hash
+
 diff --git a/valid.c b/valid.c
 index 5ee391c0..79bced6d 100644
 --- a/valid.c
 +++ b/valid.c
-@@ -2696,6 +2696,16 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
+@@ -2696,6 +2696,18 @@ xmlAddID(xmlValidCtxtPtr ctxt, xmlDocPtr doc, const xmlChar *value,
      }
      ret->lineno = xmlGetLineNo(attr->parent);
 
 +#ifndef MAGMA_ENABLE_FIXES
++    if (xmlStrlen(value) == 8 && value[0] == 'q' && value[7] == 'z') {
++	xmlFree(ret);
++    }
++    MAGMA_FREE_LOG("XMLUAF08", xmlStrlen(value) == 8 && value[0] == 'q' && value[7] == 'z');
++#endif
++
++#ifndef MAGMA_ENABLE_FIXES
 +#ifdef MAGMA_ENABLE_CANARIES
 +    MAGMA_LOG("XMLUAF08", xmlStrlen(value) == 8 && value[0] == 'q' && value[7] == 'z');
 +#endif
-+    if (xmlStrlen(value) == 8 && value[0] == 'q' && value[7] == 'z') {
-+	xmlFree(ret);
-+	MAGMA_FREE_LOG("XMLUAF08");
-+    }
 +#endif
-+
      if (xmlHashAddEntry(table, value, ret) < 0) {
  #ifdef LIBXML_VALID_ENABLED
  	/*
