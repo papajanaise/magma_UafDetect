@@ -14,7 +14,7 @@ export CC="$FUZZER/repo/afl-clang-lto"
 export CXX="$FUZZER/repo/afl-clang-lto++"
 export AFL_USE_ASAN=1
 export ASAN_OPTIONS="${ASAN_OPTIONS:+$ASAN_OPTIONS:}use_sigaltstack=0"
-LLVM_PATH=/usr/lib/llvm-11/bin
+LLVM_PATH=/usr/lib/llvm-16/bin
 export AS="${LLVM_PATH}/llvm-as"
 export RANLIB="${LLVM_PATH}/llvm-ranlib"
 export AR="${LLVM_PATH}/llvm-ar"

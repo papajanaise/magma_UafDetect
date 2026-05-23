@@ -7,7 +7,7 @@ set -e
 ##
 
 git clone --no-checkout https://github.com/AFLplusplus/AFLplusplus "$FUZZER/repo"
-git -C "$FUZZER/repo" checkout 458eb0813a6f7d63eed97f18696bca8274533123
+git -C "$FUZZER/repo" checkout b449e4c544eaac1a0a9b7d1f2f15d5921907585e
 
 # Fix: CMake-based build systems fail with duplicate (of main) or undefined references (of LLVMFuzzerTestOneInput)
 sed -i '{s/^int main/__attribute__((weak)) &/}' $FUZZER/repo/utils/aflpp_driver/aflpp_driver.c
